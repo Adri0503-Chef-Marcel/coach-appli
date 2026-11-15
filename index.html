@@ -56,7 +56,34 @@ main {
   flex: 1; min-height: 0; overflow-y: auto;
   padding: calc(env(safe-area-inset-top) + 20px) 16px 20px;
 }
-.onglet { display: flex; flex-direction: column; gap: 12px; }
+/* Téléphone : un seul onglet visible à la fois, choisi dans la barre du bas */
+.onglet { display: none; flex-direction: column; gap: 12px; min-width: 0; }
+body[data-onglet="aujourdhui"] #onglet-aujourdhui,
+body[data-onglet="saisie"] #onglet-saisie,
+body[data-onglet="tendances"] #onglet-tendances,
+body[data-onglet="semaine"] #onglet-semaine,
+body[data-onglet="reglages"] #onglet-reglages { display: flex; }
+
+/* Bouton de retour des Réglages */
+.retour { align-self: flex-start; }
+
+/* Tablette et petit PC : deux colonnes, sans barre d'onglets */
+@media (min-width: 760px) {
+  .appli { max-width: none; }
+  main { padding: 28px 24px 32px; }
+  body:not([data-onglet="reglages"]) main {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 24px; align-items: start;
+    max-width: 1100px; width: 100%; margin: 0 auto;
+  }
+  body:not([data-onglet="reglages"]) .onglet:not(#onglet-reglages) { display: flex; }
+  body[data-onglet="reglages"] main { max-width: 560px; width: 100%; margin: 0 auto; }
+  body nav.onglets { display: none; }
+}
+
+/* Grand écran : les quatre onglets côte à côte, comme sur la maquette */
+@media (min-width: 1280px) {
+  body:not([data-onglet="reglages"]) main { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 1680px; }
+}
 
 /* En-tête */
 .entete { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -207,7 +234,7 @@ nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; 
   </section>
 
   <!-- ================= Saisie ================= -->
-  <section id="onglet-saisie" class="onglet" aria-labelledby="titre-saisie" hidden>
+  <section id="onglet-saisie" class="onglet" aria-labelledby="titre-saisie">
     <header class="entete">
       <div>
         <div class="sur-titre" id="saisie-date"></div>
@@ -257,31 +284,32 @@ nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; 
   </section>
 
   <!-- ================= Tendances ================= -->
-  <section id="onglet-tendances" class="onglet" aria-labelledby="titre-tendances" hidden>
+  <section id="onglet-tendances" class="onglet" aria-labelledby="titre-tendances">
     <header class="entete"><div><div class="sur-titre">Santé et sport sur le même écran</div><h1 id="titre-tendances">Tendances</h1></div></header>
     <div class="bandeau info">Les graphiques de VFC, de sommeil, de forme et de fatigue arrivent à l'étape 6d.</div>
   </section>
 
   <!-- ================= Semaine ================= -->
-  <section id="onglet-semaine" class="onglet" aria-labelledby="titre-semaine" hidden>
+  <section id="onglet-semaine" class="onglet" aria-labelledby="titre-semaine">
     <header class="entete"><div><div class="sur-titre">Plan du coach et garde-fous</div><h1 id="titre-semaine">Semaine</h1></div></header>
     <div class="bandeau info">Le plan de la semaine et le verdict des garde-fous arrivent à l'étape 6d.</div>
   </section>
 
   <!-- ================= Réglages ================= -->
-  <section id="onglet-reglages" class="onglet" aria-labelledby="titre-reglages" hidden>
+  <section id="onglet-reglages" class="onglet" aria-labelledby="titre-reglages">
     <header class="entete"><div><div class="sur-titre">Connexion à ton dépôt GitHub</div><h1 id="titre-reglages">Réglages</h1></div></header>
     <section class="carte" style="display: flex; flex-direction: column; gap: 10px">
       <h2>Clé d'accès GitHub</h2>
-      <div class="aide">Elle permet à l'appli de lire tes données et de lancer ta matinée. Elle reste enregistrée dans ce téléphone uniquement.</div>
+      <div class="aide">Elle permet à l'appli de lire tes données et de lancer ta matinée. Elle reste enregistrée dans cet appareil uniquement.</div>
       <div class="champ">
         <label for="champ-jeton">Clé (commence par github_pat_)</label>
         <input id="champ-jeton" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
       </div>
       <button type="button" class="bouton principal" id="bouton-enregistrer-jeton">Enregistrer et tester</button>
-      <button type="button" class="bouton discret" id="bouton-oublier-jeton">Oublier la clé de ce téléphone</button>
+      <button type="button" class="bouton discret" id="bouton-oublier-jeton">Oublier la clé de cet appareil</button>
       <div id="reglages-statut" role="status" aria-live="polite"></div>
     </section>
+    <button type="button" class="bouton discret retour" data-aller="aujourdhui">Retour à l'appli</button>
   </section>
 
 </main>
@@ -731,14 +759,13 @@ function oublierJeton() {
   etat.donnees = null;
   const zone = $("reglages-statut");
   vider(zone);
-  zone.appendChild(bandeau("ok", "Clé effacée de ce téléphone."));
+  zone.appendChild(bandeau("ok", "Clé effacée de cet appareil."));
 }
 
 // ---------- Navigation ----------
 function afficherOnglet(nom) {
-  for (const section of document.querySelectorAll(".onglet")) {
-    section.hidden = section.id !== "onglet-" + nom;
-  }
+  // Le CSS décide de ce qui s'affiche : un onglet sur téléphone, tous côte à côte sur PC
+  document.body.dataset.onglet = nom;
   for (const bouton of document.querySelectorAll("nav.onglets button")) {
     if (bouton.dataset.onglet === nom) bouton.setAttribute("aria-current", "page");
     else bouton.removeAttribute("aria-current");
