@@ -79,6 +79,7 @@ body[data-onglet="reglages"] #onglet-reglages { display: flex; }
   .contenu-pc { max-width: 1360px; margin: 0 auto; }
   .entete-pc { display: block; padding-top: 28px; }
   .pc-seulement { display: flex !important; }
+  .carte-verdict.pc-seulement { display: grid !important; }
   .tel-seulement { display: none !important; }
   body nav.onglets { display: none; }
   .onglet { gap: 16px; }
@@ -261,6 +262,32 @@ nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; 
 .carte-verdict .resume { font-size: 14px; color: var(--discret); line-height: 1.5; }
 .carte-verdict .signal { padding: 5px 0; }
 .carte-verdict .signal .constat { font-size: 13px; }
+
+/* Alerte précoce et répartition des verdicts */
+.alerte-precoce { display: flex; flex-direction: column; gap: 8px; }
+.alerte-precoce.niveau-2 { background: var(--orange-clair); color: var(--orange-texte); }
+.alerte-precoce .tete-alerte { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.alerte-precoce .message { font-size: 14px; line-height: 1.45; }
+.marqueurs { display: flex; flex-wrap: wrap; gap: 6px; }
+.marqueur { font-size: 12px; font-weight: 500; border-radius: 999px; padding: 4px 10px; background: var(--puce); color: var(--texte); }
+.marqueur.m-signal { background: var(--orange); color: #FFFFFF; }
+.marqueur.m-indisponible { background: transparent; border: 1px dashed #9AA39C; color: var(--discret); }
+.repartition { display: flex; flex-direction: column; gap: 6px; }
+.repartition .barre-verdicts { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--puce); }
+.repartition .barre-verdicts span { display: block; height: 100%; }
+.repartition .VERT { background: var(--vert); }
+.repartition .ORANGE { background: #E08A3C; }
+.repartition .ROUGE { background: var(--rouge); }
+.repartition .comptes { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; }
+.repartition .comptes span { display: inline-flex; align-items: center; gap: 6px; }
+.repartition .pastille { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.carte-verdict .repartition { grid-column: 1 / -1; border-top: 1px solid #E8EBE6; padding-top: 12px; }
+
+/* Zones cardiaques */
+.barre-zones { display: flex; height: 14px; border-radius: 6px; overflow: hidden; margin: 6px 0 2px; }
+.barre-zones span { display: block; height: 100%; }
+.legende-zones { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; font-size: 11px; color: var(--discret); }
+.legende-zones strong { display: block; font-size: 12px; color: var(--texte); }
 
 /* Cartes d'indicateurs */
 .grille-indicateurs { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
@@ -713,6 +740,9 @@ function afficherAujourdhui() {
   if (d.synchro && d.synchro.ok === false) {
     bandeaux.appendChild(bandeau("alerte", d.synchro.message + " Le verdict s'appuie sur les données déjà enregistrées."));
   }
+  if (d.alerte_precoce && d.alerte_precoce.niveau >= 2) {
+    bandeaux.appendChild(bandeau("alerte", d.alerte_precoce.message + " Détail dans l'onglet Santé."));
+  }
 
   // Verdict
   const carte = $("verdict");
@@ -969,10 +999,10 @@ const INDICATEURS = [
   { cle: "vfc", nom: "VFC nocturne", source: "Garmin", unite: "ms", sens: 1, seuil: 1, format: (v) => nombre(v), ecart: (e) => signe(e) + nombre(Math.abs(e)) + " ms" },
   { cle: "sommeil_score", nom: "Score de sommeil", source: "Garmin", unite: "/ 100", sens: 1, seuil: 1, format: (v) => nombre(v), ecart: (e) => signe(e) + nombre(Math.abs(e)) + " pt" + (Math.round(Math.abs(e)) > 1 ? "s" : "") },
   { cle: "sommeil_h", nom: "Durée de sommeil", source: "Garmin, corrigée par ta saisie", unite: "", sens: 1, seuil: 5 / 60, format: (v) => heuresMinutes(v), ecart: (e) => signe(e) + Math.round(Math.abs(e) * 60) + " min" },
+  { cle: "stress", nom: "Stress", source: "Garmin, moyenne de la journée", unite: "/ 100", sens: -1, seuil: 1, format: (v) => nombre(v), ecart: (e) => signe(e) + nombre(Math.abs(e)) + " pt" + (Math.round(Math.abs(e)) > 1 ? "s" : "") },
   { cle: "body_battery", nom: "Body Battery au réveil", source: "Garmin", unite: "/ 100", sens: 1, seuil: 1, format: (v) => nombre(v), ecart: (e) => signe(e) + nombre(Math.abs(e)) + " pt" + (Math.round(Math.abs(e)) > 1 ? "s" : "") },
 ];
 const EN_ATTENTE = [
-  { nom: "Stress", source: "Garmin", texte: "Arrive à l'étape 7b" },
   { nom: "Poids", source: "Withings", texte: "Arrive avec la balance Withings" },
   { nom: "Masse maigre", source: "Withings", texte: "Arrive avec la balance Withings" },
 ];
@@ -988,6 +1018,16 @@ function afficherSante() {
   const periode = PERIODES[etat.periode];
 
   zone.appendChild(carteVerdictPc(d));
+  if (d.alerte_precoce) zone.appendChild(carteAlerte(d.alerte_precoce));
+  if (d.verdicts && d.verdicts.length) {
+    const carte = element("section", "carte tel-seulement");
+    carte.style.display = "flex";
+    carte.style.flexDirection = "column";
+    carte.style.gap = "8px";
+    carte.appendChild(element("h2", "petit", "Verdicts du matin sur la période"));
+    carte.appendChild(blocRepartition(d.verdicts, periode));
+    zone.appendChild(carte);
+  }
 
   const grille = element("section", "grille-indicateurs");
   grille.setAttribute("aria-label", "Indicateurs de récupération");
@@ -1058,6 +1098,54 @@ function carteVerdictPc(d) {
     }
   }
   carte.appendChild(droite);
+  if (d.verdicts && d.verdicts.length) carte.appendChild(blocRepartition(d.verdicts, PERIODES[etat.periode]));
+  return carte;
+}
+
+// Combien de jours verts, orange et rouges sur la période choisie
+function blocRepartition(verdicts, periode) {
+  const debut = decalerJour(etat.donnees.jour, -(periode.jours - 1));
+  const retenus = verdicts.filter((v) => v.jour >= debut && v.jour <= etat.donnees.jour);
+  const bloc = element("div", "repartition");
+  if (!retenus.length) {
+    bloc.appendChild(element("div", "aide", "Aucun verdict sur cette période."));
+    return bloc;
+  }
+  const comptes = { VERT: 0, ORANGE: 0, ROUGE: 0 };
+  for (const v of retenus) comptes[v.couleur] = (comptes[v.couleur] || 0) + 1;
+  const noms = { VERT: ["jour vert", "jours verts"], ORANGE: ["jour orange", "jours orange"], ROUGE: ["jour rouge", "jours rouges"] };
+
+  const barre = element("div", "barre-verdicts");
+  barre.setAttribute("role", "img");
+  barre.setAttribute("aria-label", Object.keys(comptes).map((c) => comptes[c] + " " + noms[c][comptes[c] > 1 ? 1 : 0]).join(", ") + " sur " + retenus.length + " jours");
+  const textes = element("div", "comptes");
+  for (const couleur of ["VERT", "ORANGE", "ROUGE"]) {
+    if (comptes[couleur]) {
+      const morceau = element("span", couleur);
+      morceau.style.width = (comptes[couleur] / retenus.length * 100) + "%";
+      barre.appendChild(morceau);
+    }
+    const texte = element("span");
+    texte.appendChild(element("span", "pastille " + couleur));
+    texte.appendChild(document.createTextNode(comptes[couleur] + " " + noms[couleur][comptes[couleur] > 1 ? 1 : 0]));
+    textes.appendChild(texte);
+  }
+  bloc.appendChild(element("div", "aide", "Sur " + (periode.jours === 7 ? "la semaine" : periode.jours === 30 ? "le mois" : "l'année") + " (" + retenus.length + " jour" + (retenus.length > 1 ? "s" : "") + " avec une nuit mesurée)"));
+  bloc.appendChild(barre);
+  bloc.appendChild(textes);
+  return bloc;
+}
+
+function carteAlerte(alerte) {
+  const carte = element("section", "carte alerte-precoce" + (alerte.niveau >= 2 ? " niveau-2" : ""));
+  const tete = element("div", "tete-alerte");
+  if (alerte.niveau >= 1) tete.appendChild(iconeAlerte());
+  tete.appendChild(document.createTextNode("Alerte précoce · " + alerte.nuits + " dernières nuits comparées à ta normale"));
+  carte.appendChild(tete);
+  carte.appendChild(element("div", "message", alerte.message));
+  const marqueurs = element("div", "marqueurs");
+  for (const m of alerte.marqueurs || []) marqueurs.appendChild(element("span", "marqueur m-" + m.statut, m.texte));
+  carte.appendChild(marqueurs);
   return carte;
 }
 
@@ -1230,13 +1318,25 @@ function carteEntrainement(d, nuits, periode) {
   const c = d.charge_reveil || {};
   const ressentis = valeursPeriode(nuits, "forme", periode.jours, 0);
   const ressenti = moyenne(ressentis);
+  const vo2 = d.vo2max || [];
+  let vo2Valeur = null, vo2Indice = "pas encore estimée par Garmin";
+  if (vo2.length) {
+    const derniere = vo2[vo2.length - 1];
+    vo2Valeur = nombre(derniere.valeur, derniere.valeur % 1 ? 1 : 0);
+    vo2Indice = "estimée le " + dateCourte(derniere.jour);
+    const avant = vo2.filter((v) => v.jour <= decalerJour(derniere.jour, -28));
+    if (avant.length) {
+      const ecart = derniere.valeur - avant[avant.length - 1].valeur;
+      vo2Indice += Math.abs(ecart) < 0.5 ? " · stable sur 4 semaines" : " · " + signe(ecart) + nombre(Math.abs(ecart), 1) + " en 4 semaines";
+    }
+  }
   const lignes = [
     ["Forme", "charge des 42 derniers jours", nombre(c.forme)],
     ["Fatigue", "charge des 7 derniers jours", nombre(c.fatigue)],
     ["Fraîcheur", "forme moins fatigue", c.fraicheur === null || c.fraicheur === undefined ? "–" : signe(c.fraicheur) + nombre(Math.abs(c.fraicheur))],
     ["ACWR", "garde-fou : avertissement au-dessus de 1,3, blocage au-dessus de 1,5", nombre(c.acwr, 2)],
     ["Ressenti du matin", ressentis.length ? "moyenne sur " + ressentis.length + " saisie" + (ressentis.length > 1 ? "s" : "") + " (" + periode.nom + ")" : "aucune saisie sur cette période", ressenti === null ? "–" : nombre(ressenti, 1) + " / 5"],
-    ["VO2 max estimée", "course à pied", null],
+    ["VO2 max estimée", vo2Indice, vo2Valeur],
   ];
   const liste = element("div", "liste-valeurs");
   for (const [nom, indice, valeur] of lignes) {
@@ -1245,7 +1345,7 @@ function carteEntrainement(d, nuits, periode) {
     bloc.appendChild(element("div", "nom-valeur", nom));
     bloc.appendChild(element("div", "indice", indice));
     ligne.appendChild(bloc);
-    ligne.appendChild(element("div", "val" + (valeur === null ? " attente" : ""), valeur === null ? "étape 7b" : valeur));
+    ligne.appendChild(element("div", "val" + (valeur === null ? " attente" : ""), valeur === null ? "–" : valeur));
     liste.appendChild(ligne);
   }
   carte.appendChild(liste);
@@ -1490,15 +1590,60 @@ function carteIndicateursPrepa(semaines) {
     grille.appendChild(regularite);
   }
 
+  grille.appendChild(carteIntensite(etat.donnees.intensite));
+
   const venir = element("article", "carte indicateur attente");
   venir.appendChild(element("h2", null, "Bientôt dans cet onglet"));
   const liste = element("ul", "a-venir");
-  for (const texte of ["Séances réalisées sur prévues", "Répartition d'intensité", "Efficience aérobie", "Dérive cardiaque en sortie longue", "Rythme de perte de poids (Withings)", "Glucides en sortie longue"]) {
+  for (const texte of ["Séances réalisées sur prévues", "Efficience aérobie", "Dérive cardiaque en sortie longue", "Rythme de perte de poids (Withings)", "Glucides en sortie longue"]) {
     liste.appendChild(element("li", null, texte));
   }
   venir.appendChild(liste);
   grille.appendChild(venir);
   return grille;
+}
+
+const COULEURS_ZONES = ["#B8D8CF", "#0B5D52", "#E8B04B", "#E08A3C", "#B42318"];
+
+function carteIntensite(intensite) {
+  const carte = element("article", "carte indicateur");
+  const tete = element("div", "tete");
+  tete.appendChild(element("h2", null, "Répartition d'intensité"));
+  tete.appendChild(element("div", "source", "Garmin, zones cardiaques"));
+  carte.appendChild(tete);
+  if (!intensite) {
+    const grand = element("div", "grand");
+    grand.appendChild(element("span", "valeur", "–"));
+    carte.appendChild(grand);
+    carte.appendChild(element("div", "aide", "Pas encore de séance avec des zones cardiaques sur les 4 dernières semaines."));
+    return carte;
+  }
+  const grand = element("div", "grand");
+  grand.appendChild(element("span", "valeur", intensite.part_facile + " %"));
+  grand.appendChild(element("span", "unite", "en endurance facile"));
+  carte.appendChild(grand);
+  const favorable = intensite.part_facile >= 75;
+  carte.appendChild(element("div", "evolution " + (favorable ? "favorable" : "surveiller"), favorable ? "Proche du repère 80 / 20 · favorable" : "Trop de temps en intensité · à surveiller"));
+
+  const total = intensite.minutes_par_zone.reduce((a, b) => a + b, 0) || 1;
+  const barre = element("div", "barre-zones");
+  barre.setAttribute("role", "img");
+  barre.setAttribute("aria-label", "Minutes par zone cardiaque, de la zone 1 à la zone 5 : " + intensite.minutes_par_zone.join(", "));
+  const legende = element("div", "legende-zones");
+  legende.setAttribute("aria-hidden", "true");
+  intensite.minutes_par_zone.forEach((minutes, i) => {
+    const morceau = element("span");
+    morceau.style.width = (minutes / total * 100) + "%";
+    morceau.style.background = COULEURS_ZONES[i];
+    barre.appendChild(morceau);
+    const bloc = element("div", null, "Zone " + (i + 1));
+    bloc.appendChild(element("strong", null, duree(minutes)));
+    legende.appendChild(bloc);
+  });
+  carte.appendChild(barre);
+  carte.appendChild(legende);
+  carte.appendChild(element("div", "aide", "Repère : environ 80 % du temps en zones 1 et 2. Course et vélo, " + intensite.seances + " séance" + (intensite.seances > 1 ? "s" : "") + " sur 4 semaines."));
+  return carte;
 }
 
 // ---------- En-tête du PC ----------
