@@ -60,30 +60,55 @@ main {
 .onglet { display: none; flex-direction: column; gap: 12px; min-width: 0; }
 body[data-onglet="aujourdhui"] #onglet-aujourdhui,
 body[data-onglet="saisie"] #onglet-saisie,
-body[data-onglet="tendances"] #onglet-tendances,
-body[data-onglet="semaine"] #onglet-semaine,
+body[data-onglet="sante"] #onglet-sante,
+body[data-onglet="preparation"] #onglet-preparation,
 body[data-onglet="reglages"] #onglet-reglages { display: flex; }
 
 /* Bouton de retour des Réglages */
 .retour { align-self: flex-start; }
 
-/* Tablette et petit PC : deux colonnes, sans barre d'onglets */
-@media (min-width: 760px) {
+/* Éléments propres à une vue */
+.pc-seulement { display: none !important; }
+.entete-pc { display: none; }
+
+/* PC : tableau de bord pleine largeur, onglets Santé et Préparation en haut,
+   sans Aujourd'hui ni Saisie (ils restent sur le téléphone) */
+@media (min-width: 900px) {
   .appli { max-width: none; }
-  main { padding: 28px 24px 32px; }
-  body:not([data-onglet="reglages"]) main {
-    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 24px; align-items: start;
-    max-width: 1100px; width: 100%; margin: 0 auto;
-  }
-  body:not([data-onglet="reglages"]) .onglet:not(#onglet-reglages) { display: flex; }
-  body[data-onglet="reglages"] main { max-width: 560px; width: 100%; margin: 0 auto; }
+  main { padding: 0 32px 40px; }
+  .contenu-pc { max-width: 1360px; margin: 0 auto; }
+  .entete-pc { display: block; padding-top: 28px; }
+  .pc-seulement { display: flex !important; }
+  .tel-seulement { display: none !important; }
   body nav.onglets { display: none; }
+  .onglet { gap: 16px; }
+  .onglet > .entete { display: none; }
+  #onglet-reglages > .entete { display: flex; }
+  body[data-onglet="reglages"] .contenu-pc > .onglet { max-width: 560px; }
 }
 
-/* Grand écran : les quatre onglets côte à côte, comme sur la maquette */
-@media (min-width: 1280px) {
-  body:not([data-onglet="reglages"]) main { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 1680px; }
+/* En-tête PC */
+.entete-pc .haut { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.entete-pc h1 { font-size: 30px; }
+.entete-pc .sous-titre { font-size: 14px; color: var(--discret); margin-top: 4px; }
+.entete-pc .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.entete-pc .actions .bouton { min-height: 44px; font-size: 14px; }
+.onglets-pc { display: flex; gap: 8px; border-bottom: 1px solid var(--bordure); margin: 20px 0 20px; }
+.onglets-pc button {
+  border: none; background: transparent; padding: 10px 16px; font-size: 16px; font-weight: 500;
+  color: var(--discret); border-bottom: 2.5px solid transparent; margin-bottom: -1px; cursor: pointer; min-height: 44px;
 }
+.onglets-pc button[aria-current="page"] { color: var(--texte); font-weight: 600; border-bottom-color: var(--vert); }
+
+/* Sélecteur Semaine / Mois / Année */
+.periodes { display: inline-flex; background: var(--puce); border-radius: 12px; padding: 4px; gap: 2px; }
+.periodes button {
+  border: none; background: transparent; border-radius: 9px; padding: 8px 16px; min-height: 40px;
+  font-size: 14px; font-weight: 500; color: var(--discret); cursor: pointer;
+}
+.periodes button[aria-pressed="true"] { background: var(--carte); color: var(--texte); font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
+.onglet > .entete .periodes { margin-top: 6px; }
+body[data-onglet="preparation"] .entete-pc .periodes, body[data-onglet="reglages"] .entete-pc .periodes { display: none; }
 
 /* En-tête */
 .entete { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -132,6 +157,7 @@ h2 { margin: 0; font-size: 15px; font-weight: 600; }
 /* Tuiles de chiffres */
 .tuiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .tuile { background: var(--carte); border-radius: 12px; padding: 10px 6px; text-align: center; }
+.carte .tuile { background: var(--fond); }
 .tuile .valeur { font-family: var(--titre); font-size: 22px; font-weight: 700; }
 .tuile .nom { font-size: 11px; color: var(--discret); }
 
@@ -225,6 +251,102 @@ nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; 
 .envoi.ok { color: var(--vert); }
 .envoi.bloque { color: var(--rouge); }
 
+/* Tableau de bord : carte du verdict (PC) */
+.carte-verdict { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; padding: 20px 24px; }
+.carte-verdict .etiquette { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--discret); }
+.carte-verdict .titre-verdict { font-family: var(--titre); font-size: 26px; font-weight: 700; margin: 6px 0; line-height: 1.2; }
+.carte-verdict .titre-verdict.VERT { color: var(--vert); }
+.carte-verdict .titre-verdict.ORANGE { color: var(--orange); }
+.carte-verdict .titre-verdict.ROUGE { color: var(--rouge); }
+.carte-verdict .resume { font-size: 14px; color: var(--discret); line-height: 1.5; }
+.carte-verdict .signal { padding: 5px 0; }
+.carte-verdict .signal .constat { font-size: 13px; }
+
+/* Cartes d'indicateurs */
+.grille-indicateurs { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+@media (min-width: 900px) {
+  .grille-indicateurs { gap: 16px; }
+  .grille-indicateurs .fin-pc { order: 10; }
+}
+@media (min-width: 1100px) { .grille-indicateurs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* Sur téléphone, les cartes en attente restent discrètes */
+@media (max-width: 899px) {
+  .indicateur.attente { padding: 12px 16px; gap: 2px; }
+  .indicateur.attente .grand { display: none; }
+}
+.indicateur { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; }
+.indicateur .tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.indicateur h2 { font-size: 15px; }
+.indicateur .source { font-size: 11px; color: var(--discret); text-align: right; max-width: 55%; line-height: 1.3; }
+.indicateur .grand { display: flex; align-items: baseline; gap: 6px; }
+.indicateur .grand .valeur { font-family: var(--titre); font-size: 34px; font-weight: 700; line-height: 1.1; }
+.indicateur .grand .unite { font-size: 14px; color: var(--discret); }
+.indicateur .evolution { font-size: 13px; font-weight: 500; }
+.evolution.favorable { color: var(--vert); }
+.evolution.surveiller { color: #9A3412; }
+.evolution.stable, .evolution.neutre { color: var(--discret); }
+.courbe { width: 100%; height: 48px; display: block; margin: 6px 0 2px; }
+.trois-moyennes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; border-top: 1px solid #E8EBE6; padding-top: 8px; }
+.trois-moyennes .nom { font-size: 11px; color: var(--discret); }
+.trois-moyennes .val { font-size: 14px; font-weight: 600; }
+.indicateur.attente { background: transparent; border: 1.5px dashed #9AA39C; }
+.indicateur.attente .grand .valeur { color: #9AA39C; }
+
+/* Graphiques larges */
+.rangee { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+@media (min-width: 900px) { .rangee.deux-un { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; } }
+.carte.large { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.tete-large { display: flex; justify-content: space-between; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; }
+.tete-large h2 { font-family: var(--titre); font-size: 19px; font-weight: 700; }
+.tete-large .precision { font-size: 12px; color: var(--discret); }
+.zone-graphe { position: relative; height: 200px; margin-left: 44px; background: #F7F8F6; border-radius: 8px; }
+.zone-graphe svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.zone-graphe .axe-y { position: absolute; left: -44px; width: 40px; text-align: right; font-size: 11px; color: var(--discret); transform: translateY(-50%); }
+.zone-graphe .repere-graphe {
+  position: absolute; top: 6px; transform: translateX(-50%); background: var(--texte); color: #FFFFFF;
+  font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 6px; white-space: nowrap;
+}
+.zone-graphe .ligne-repere { position: absolute; top: 0; bottom: 0; border-left: 1px dashed #9AA39C; }
+.axe-x { display: flex; justify-content: space-between; font-size: 11px; color: var(--discret); margin-left: 44px; }
+.legende-large { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--texte); }
+.legende-large span { display: inline-flex; align-items: center; gap: 6px; }
+.trait { display: inline-block; width: 22px; height: 0; border-top: 2.5px solid var(--vert); }
+.trait.fin { border-top: 1.5px dashed var(--orange); }
+.pave { display: inline-block; width: 18px; height: 10px; background: var(--vert-clair); border-radius: 2px; }
+
+/* Liste de valeurs (Entraînement et ressenti, statistiques) */
+.liste-valeurs { display: flex; flex-direction: column; }
+.liste-valeurs .ligne-valeur { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid #E8EBE6; }
+.liste-valeurs .ligne-valeur:last-child { border-bottom: none; }
+.liste-valeurs .nom-valeur { font-size: 14px; }
+.liste-valeurs .indice { font-size: 11px; color: var(--discret); margin-top: 2px; }
+.liste-valeurs .val { font-family: var(--titre); font-size: 20px; font-weight: 700; white-space: nowrap; }
+.liste-valeurs .val.attente { font-family: inherit; font-size: 13px; font-weight: 500; color: #9AA39C; }
+
+/* Préparation */
+.grille-courses { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+@media (min-width: 900px) { .grille-courses { gap: 16px; } }
+.course { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; }
+.course .tag { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--discret); }
+.course.prochaine .tag { color: var(--vert); font-weight: 600; }
+.course h2 { font-family: var(--titre); font-size: 19px; font-weight: 700; }
+.course .detail { font-size: 13px; color: var(--discret); }
+.course .compte { font-family: var(--titre); font-size: 30px; font-weight: 700; margin-top: 4px; }
+.course .objectif { font-size: 13px; line-height: 1.4; }
+.volume { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+@media (min-width: 900px) { .volume { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 32px; } }
+.chiffres-volume { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin: 0; }
+.chiffres-volume dt { font-size: 12px; color: var(--discret); }
+.chiffres-volume dd { margin: 2px 0 0; font-family: var(--titre); font-size: 22px; font-weight: 700; }
+.barres { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; align-items: end; height: 150px; }
+.barres .colonne { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; }
+.barres .km { font-size: 11px; font-weight: 600; }
+.barres .barre { width: 100%; max-width: 40px; background: var(--vert-clair); border-radius: 4px 4px 0 0; min-height: 2px; }
+.barres .colonne.en-cours .barre { background: var(--vert); }
+.etiquettes-barres { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; font-size: 11px; color: var(--discret); text-align: center; margin-top: 4px; }
+.a-venir { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: var(--discret); }
+.sources { font-size: 12px; color: var(--discret); line-height: 1.5; }
+
 /* Message flottant */
 .toast {
   position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 12px); transform: translateX(-50%);
@@ -236,6 +358,32 @@ nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; 
 <body>
 <div class="appli">
 <main>
+<div class="contenu-pc">
+
+  <!-- ================= En-tête du tableau de bord (PC uniquement) ================= -->
+  <header class="entete-pc">
+    <div class="haut">
+      <div>
+        <h1>Tableau de bord santé</h1>
+        <div class="sous-titre" id="pc-sous-titre">Chargement…</div>
+      </div>
+      <div class="actions">
+        <div class="periodes" role="group" aria-label="Période des moyennes">
+          <button type="button" data-periode="s" aria-pressed="false">Semaine</button>
+          <button type="button" data-periode="m" aria-pressed="true">Mois</button>
+          <button type="button" data-periode="a" aria-pressed="false">Année</button>
+        </div>
+        <button type="button" class="bouton" id="bouton-copier-pc" disabled>Copier le rapport pour mon coach</button>
+        <button type="button" class="bouton-icone" id="bouton-actualiser-pc" aria-label="Actualiser les données"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg></button>
+        <button type="button" class="bouton-icone" data-aller="reglages" aria-label="Réglages"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></button>
+      </div>
+    </div>
+    <nav class="onglets-pc" aria-label="Onglets du tableau de bord">
+      <button type="button" data-onglet="sante">Santé</button>
+      <button type="button" data-onglet="preparation">Préparation</button>
+    </nav>
+    <div id="pc-bandeaux" style="display: flex; flex-direction: column; gap: 8px"></div>
+  </header>
 
   <!-- ================= Aujourd'hui ================= -->
   <section id="onglet-aujourdhui" class="onglet" aria-labelledby="titre-aujourdhui">
@@ -327,30 +475,53 @@ nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; 
     <div class="aide" style="text-align: center">Synchro Garmin, verdict et rapport : une à deux minutes. Sans saisie de ta part, la synchro part seule à 10 h.</div>
   </section>
 
-  <!-- ================= Tendances ================= -->
-  <section id="onglet-tendances" class="onglet" aria-labelledby="titre-tendances">
-    <header class="entete"><div><div class="sur-titre">Santé et sport sur le même écran</div><h1 id="titre-tendances">Tendances</h1></div></header>
-    <div id="contenu-tendances" style="display: flex; flex-direction: column; gap: 12px">
+  <!-- ================= Santé ================= -->
+  <section id="onglet-sante" class="onglet" aria-labelledby="titre-sante">
+    <header class="entete">
+      <div>
+        <div class="sur-titre">Ta récupération dans le temps</div>
+        <h1 id="titre-sante">Santé</h1>
+        <div class="periodes" role="group" aria-label="Période des moyennes">
+          <button type="button" data-periode="s" aria-pressed="false">Semaine</button>
+          <button type="button" data-periode="m" aria-pressed="true">Mois</button>
+          <button type="button" data-periode="a" aria-pressed="false">Année</button>
+        </div>
+      </div>
+    </header>
+    <div id="contenu-sante" style="display: flex; flex-direction: column; gap: inherit">
       <div class="vide">Chargement…</div>
     </div>
   </section>
 
-  <!-- ================= Semaine ================= -->
-  <section id="onglet-semaine" class="onglet" aria-labelledby="titre-semaine">
-    <header class="entete"><div><div class="sur-titre" id="semaine-periode">Plan du coach et garde-fous</div><h1 id="titre-semaine">Semaine</h1></div></header>
-    <div id="contenu-semaine" style="display: flex; flex-direction: column; gap: 12px">
+  <!-- ================= Préparation ================= -->
+  <section id="onglet-preparation" class="onglet" aria-labelledby="titre-preparation">
+    <header class="entete"><div><div class="sur-titre">Courses, volume et plan du coach</div><h1 id="titre-preparation">Préparation</h1></div></header>
+    <div id="contenu-preparation" style="display: flex; flex-direction: column; gap: inherit">
       <div class="vide">Chargement…</div>
     </div>
 
-    <button type="button" class="bouton" id="bouton-coller-plan">Coller un nouveau plan du coach</button>
-    <section class="carte" id="bloc-plan" style="display: flex; flex-direction: column; gap: 10px" hidden>
-      <label for="champ-plan"><h2>Nouveau plan du coach</h2></label>
-      <div class="aide">Colle la réponse de ton coach telle quelle : l'appli garde seulement le bloc JSON, de la première { à la dernière }. Les garde-fous le vérifient avant de l'enregistrer.</div>
-      <textarea id="champ-plan" rows="8" maxlength="20000" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder='{"semaine_du": "2026-11-23", "seances": [ … ]}'></textarea>
-      <button type="button" class="bouton principal" id="bouton-envoyer-plan">Vérifier et enregistrer</button>
-      <button type="button" class="bouton discret" id="bouton-annuler-plan">Annuler</button>
-      <div id="plan-statut" role="status" aria-live="polite"></div>
+    <div class="rangee deux-un">
+    <section class="carte large" aria-labelledby="titre-plan">
+      <div class="tete-large">
+        <h2 id="titre-plan">Plan de la semaine</h2>
+        <div class="precision" id="semaine-periode">Plan du coach et garde-fous</div>
+      </div>
+      <div id="contenu-semaine" style="display: flex; flex-direction: column; gap: 12px">
+        <div class="vide">Chargement…</div>
+      </div>
+      <button type="button" class="bouton" id="bouton-coller-plan">Coller un nouveau plan du coach</button>
+      <section id="bloc-plan" style="display: flex; flex-direction: column; gap: 10px" hidden>
+        <label for="champ-plan"><h2>Nouveau plan du coach</h2></label>
+        <div class="aide">Colle la réponse de ton coach telle quelle : l'appli garde seulement le bloc JSON, de la première { à la dernière }. Les garde-fous le vérifient avant de l'enregistrer.</div>
+        <textarea id="champ-plan" rows="8" maxlength="20000" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder='{"semaine_du": "2026-11-23", "seances": [ … ]}'></textarea>
+        <button type="button" class="bouton principal" id="bouton-envoyer-plan">Vérifier et enregistrer</button>
+        <button type="button" class="bouton discret" id="bouton-annuler-plan">Annuler</button>
+        <div id="plan-statut" role="status" aria-live="polite"></div>
+      </section>
     </section>
+
+    <div id="seances-recentes"></div>
+    </div>
   </section>
 
   <!-- ================= Réglages ================= -->
@@ -370,6 +541,7 @@ nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; 
     <button type="button" class="bouton discret retour" data-aller="aujourdhui">Retour à l'appli</button>
   </section>
 
+</div>
 </main>
 
 <nav class="onglets" aria-label="Onglets">
@@ -381,13 +553,13 @@ nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; 
     <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg>
     Saisie
   </button>
-  <button type="button" data-onglet="tendances">
-    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"></path><path d="M5 15l4-5 4 3 6-8"></path></svg>
-    Tendances
+  <button type="button" data-onglet="sante">
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"></path></svg>
+    Santé
   </button>
-  <button type="button" data-onglet="semaine">
-    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16"></path><path d="M9 3v4"></path><path d="M15 3v4"></path></svg>
-    Semaine
+  <button type="button" data-onglet="preparation">
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"></path><path d="M5 4h11l-2 4 2 4H5"></path></svg>
+    Préparation
   </button>
 </nav>
 </div>
@@ -407,7 +579,7 @@ const CLE_STOCKAGE = "coach-jeton";
 const ATTENTE_MAX_MS = 6 * 60 * 1000;   // on suit la routine 6 minutes au plus
 const INTERVALLE_MS = 5000;             // une vérification toutes les 5 secondes
 
-const etat = { donnees: null, forme: null, enCours: false, jetonMemoire: "" };
+const etat = { donnees: null, forme: null, enCours: false, jetonMemoire: "", periode: "m", onglet: "aujourdhui" };
 
 // ---------- Outils ----------
 const $ = (id) => document.getElementById(id);
@@ -516,7 +688,9 @@ async function chargerDonnees() {
   etat.donnees = await reponse.json();
   afficherAujourdhui();
   preparerSaisie();
-  afficherTendances();
+  afficherEntetePc();
+  afficherSante();
+  afficherPreparation();
   afficherSemaine();
   return etat.donnees;
 }
@@ -650,7 +824,13 @@ async function actualiser() {
     await chargerDonnees();
     toast("Données à jour.");
   } catch (e) {
-    const bandeaux = $("aujourdhui-bandeaux");
+    afficherErreurChargement(e);
+  }
+}
+
+function afficherErreurChargement(e) {
+  for (const id of ["aujourdhui-bandeaux", "pc-bandeaux"]) {
+    const bandeaux = $(id);
     vider(bandeaux);
     bandeaux.appendChild(bandeau("erreur", e.message));
   }
@@ -713,178 +893,632 @@ function carteGraphe(titre, periode, derniere) {
   return carte;
 }
 
-// ---------- Onglet Tendances ----------
-function afficherTendances() {
+// ---------- Calculs communs aux tableaux de bord ----------
+const PERIODES = {
+  s: { jours: 7, nom: "semaine", precedente: "vs semaine précédente" },
+  m: { jours: 30, nom: "mois", precedente: "vs mois précédent" },
+  a: { jours: 365, nom: "année", precedente: "vs année précédente" },
+};
+
+function lirePeriode() {
+  try { return localStorage.getItem("coach-periode") || "m"; } catch (e) { return "m"; }
+}
+
+function choisirPeriode(periode) {
+  etat.periode = periode;
+  try { localStorage.setItem("coach-periode", periode); } catch (e) { /* simple confort */ }
+  for (const bouton of document.querySelectorAll("[data-periode]")) {
+    bouton.setAttribute("aria-pressed", bouton.dataset.periode === periode ? "true" : "false");
+  }
+  afficherSante();
+}
+
+function ecartJours(debutIso, finIso) {
+  return Math.round((jourDate(finIso) - jourDate(debutIso)) / 86400000);
+}
+
+// Les nuits de l'année ; à défaut (ancien fichier), les 7 nuits de l'onglet Aujourd'hui
+function historique() {
   const d = etat.donnees;
-  const zone = $("contenu-tendances");
+  if (d.historique && d.historique.length) return d.historique;
+  return (d.nuits || []).map((n) => ({ ...n, forme: n.forme_declaree }));
+}
+
+// Valeurs d'un indicateur sur les n jours qui finissent "decalage" jours avant aujourd'hui
+function valeursPeriode(nuits, cle, nombreJours, decalage) {
+  const fin = decalerJour(etat.donnees.jour, -(decalage || 0));
+  const debut = decalerJour(fin, -(nombreJours - 1));
+  return nuits.filter((n) => n.jour >= debut && n.jour <= fin && n[cle] !== null && n[cle] !== undefined).map((n) => n[cle]);
+}
+
+function moyenne(valeurs) {
+  return valeurs.length ? valeurs.reduce((a, b) => a + b, 0) / valeurs.length : null;
+}
+
+// Moyenne glissante sur 7 jours calendaires (les nuits manquantes sont ignorées)
+function moyenneGlissante(nuits, cle, jours) {
+  return jours.map((jour) => moyenne(valeursPeriode(nuits.filter((n) => n.jour <= jour), cle, 7, ecartJours(jour, etat.donnees.jour))));
+}
+
+function joursPeriode(nombreJours) {
+  const liste = [];
+  for (let i = nombreJours - 1; i >= 0; i -= 1) liste.push(decalerJour(etat.donnees.jour, -i));
+  return liste;
+}
+
+// Petite courbe qui s'étire sur toute la largeur de la carte
+function courbe(valeurs, couleur, classe) {
+  const svg = dessin("svg", { viewBox: "0 0 200 40", preserveAspectRatio: "none", class: classe || "courbe", "aria-hidden": "true" });
+  const presentes = valeurs.filter((v) => v !== null && v !== undefined);
+  if (presentes.length < 2) return svg;
+  const mini = Math.min(...presentes), maxi = Math.max(...presentes);
+  const marge = (maxi - mini) * 0.1 || 1;
+  const y = (v) => 38 - (v - mini + marge) / (maxi - mini + 2 * marge) * 36;
+  // Une nuit manquante ne coupe pas la courbe : on relie les nuits mesurées
+  const points = [];
+  valeurs.forEach((v, i) => {
+    if (v !== null && v !== undefined) points.push((i / (valeurs.length - 1) * 200).toFixed(2) + "," + y(v).toFixed(2));
+  });
+  svg.appendChild(dessin("polyline", { points: points.join(" "), fill: "none", stroke: couleur || COULEURS.vert, "stroke-width": 2, "stroke-linejoin": "round", "vector-effect": "non-scaling-stroke" }));
+  return svg;
+}
+
+// ---------- Onglet Santé ----------
+const INDICATEURS = [
+  { cle: "fc_repos", nom: "FC au repos", source: "Garmin", unite: "bpm", sens: -1, seuil: 0.5, format: (v) => nombre(v), ecart: (e) => signe(e) + nombre(Math.abs(e)) + " bpm" },
+  { cle: "vfc", nom: "VFC nocturne", source: "Garmin", unite: "ms", sens: 1, seuil: 1, format: (v) => nombre(v), ecart: (e) => signe(e) + nombre(Math.abs(e)) + " ms" },
+  { cle: "sommeil_score", nom: "Score de sommeil", source: "Garmin", unite: "/ 100", sens: 1, seuil: 1, format: (v) => nombre(v), ecart: (e) => signe(e) + nombre(Math.abs(e)) + " pt" + (Math.round(Math.abs(e)) > 1 ? "s" : "") },
+  { cle: "sommeil_h", nom: "Durée de sommeil", source: "Garmin, corrigée par ta saisie", unite: "", sens: 1, seuil: 5 / 60, format: (v) => heuresMinutes(v), ecart: (e) => signe(e) + Math.round(Math.abs(e) * 60) + " min" },
+  { cle: "body_battery", nom: "Body Battery au réveil", source: "Garmin", unite: "/ 100", sens: 1, seuil: 1, format: (v) => nombre(v), ecart: (e) => signe(e) + nombre(Math.abs(e)) + " pt" + (Math.round(Math.abs(e)) > 1 ? "s" : "") },
+];
+const EN_ATTENTE = [
+  { nom: "Stress", source: "Garmin", texte: "Arrive à l'étape 7b" },
+  { nom: "Poids", source: "Withings", texte: "Arrive avec la balance Withings" },
+  { nom: "Masse maigre", source: "Withings", texte: "Arrive avec la balance Withings" },
+];
+
+function signe(valeur) { return valeur > 0 ? "+" : valeur < 0 ? "−" : ""; }
+
+function afficherSante() {
+  const d = etat.donnees;
+  const zone = $("contenu-sante");
   if (!d) return;
   vider(zone);
-  const nuits = d.nuits || [];
-  zone.appendChild(carteVfc(nuits, d.normale_vfc));
-  zone.appendChild(carteSommeil(nuits));
-  zone.appendChild(carteCharge((d.charge || []).filter((jour) => jour.jour < d.jour), d.charge_reveil || {}));
-  zone.appendChild(carteSeancesRecentes(d.seances || []));
+  const nuits = historique();
+  const periode = PERIODES[etat.periode];
 
-  const withings = element("section", "carte pointillee");
-  withings.appendChild(element("h2", null, "Poids et composition corporelle"));
-  withings.appendChild(element("div", "aide", "La courbe de poids et de masse grasse arrivera avec la balance Withings."));
-  zone.appendChild(withings);
+  zone.appendChild(carteVerdictPc(d));
+
+  const grille = element("section", "grille-indicateurs");
+  grille.setAttribute("aria-label", "Indicateurs de récupération");
+  for (const indicateur of INDICATEURS) {
+    const carte = carteIndicateur(indicateur, nuits, periode);
+    if (indicateur.cle === "body_battery") carte.classList.add("fin-pc");
+    grille.appendChild(carte);
+  }
+  for (const attente of EN_ATTENTE) {
+    const carte = element("article", "carte indicateur attente");
+    const tete = element("div", "tete");
+    tete.appendChild(element("h2", null, attente.nom));
+    tete.appendChild(element("div", "source", attente.source));
+    carte.appendChild(tete);
+    const grand = element("div", "grand");
+    grand.appendChild(element("span", "valeur", "–"));
+    carte.appendChild(grand);
+    carte.appendChild(element("div", "aide", attente.texte + "."));
+    grille.appendChild(carte);
+  }
+  zone.appendChild(grille);
+
+  const rangee = element("div", "rangee deux-un");
+  rangee.appendChild(carteVfcLarge(nuits, d.normale_vfc, periode));
+  rangee.appendChild(carteEntrainement(d, nuits, periode));
+  zone.appendChild(rangee);
+
+  const poids = element("section", "carte pointillee");
+  poids.appendChild(element("h2", null, "Poids et trajectoire cible"));
+  poids.appendChild(element("div", "aide", "La courbe de poids, la cible de début avril et le rythme de perte arriveront avec la balance Withings."));
+  zone.appendChild(poids);
+
+  zone.appendChild(element("div", "sources", "Sources : Garmin (nuits, activités) et ta saisie du matin (ressenti, sommeil réel). Withings viendra compléter le poids et la composition corporelle."));
 }
 
-function carteVfc(nuits, normale) {
-  const valeurs = nuits.map((n) => n.vfc);
-  const mesurees = valeurs.filter((v) => v !== null && v !== undefined);
-  const derniere = valeurs[valeurs.length - 1];
-  const carte = carteGraphe("VFC nocturne", nuits.length + " nuits", derniere ? derniere + " ms" : null);
-  if (!mesurees.length) {
-    carte.appendChild(element("div", "vide", "Aucune VFC mesurée sur ces nuits."));
-    return carte;
+function carteVerdictPc(d) {
+  const carte = element("section", "carte carte-verdict pc-seulement");
+  const gauche = element("div");
+  const heure = (d.genere_le || "").slice(11, 16);
+  gauche.appendChild(element("div", "etiquette", "Verdict du matin" + (heure ? " · calculé à " + heure.replace(":", " h ") : "")));
+  const v = d.verdict;
+  if (v) {
+    const couleur = v.couleur.charAt(0) + v.couleur.slice(1).toLowerCase();
+    gauche.appendChild(element("div", "titre-verdict " + v.couleur, couleur + " · " + (v.points === 0 ? "aucun point de vigilance" : v.points + " point" + (v.points > 1 ? "s" : "") + " de vigilance")));
+    gauche.appendChild(element("div", "resume", v.conseil));
+  } else {
+    gauche.appendChild(element("div", "titre-verdict", "En attente"));
+    gauche.appendChild(element("div", "resume", "La nuit de ce matin n'est pas encore synchronisée."));
   }
+  carte.appendChild(gauche);
 
-  const L = 326, H = 116, haut = 18, bas = 94, marge = 14;
-  const bornes = mesurees.concat(normale ? [normale.basse, normale.haute] : []);
-  const mini = Math.min(...bornes), maxi = Math.max(...bornes);
-  const ecart = Math.max(3, (maxi - mini) * 0.15);
-  const y = (v) => haut + (maxi + ecart - v) / (maxi - mini + 2 * ecart) * (bas - haut);
-  const x = (i) => abscisse(i, valeurs.length, L, marge);
-
-  let description = "VFC des " + nuits.length + " dernières nuits : " + valeurs.map((v) => (v === null || v === undefined ? "non mesurée" : v)).join(", ") + " millisecondes";
-  if (normale) description += ", pour une normale de " + normale.basse + " à " + normale.haute;
-  const svg = cadreGraphe(L, H, description);
-
-  if (normale) {
-    svg.appendChild(dessin("rect", { x: 0, y: y(normale.haute), width: L, height: y(normale.basse) - y(normale.haute), fill: COULEURS.bande }));
-  }
-
-  // Courbe, coupée là où une nuit manque
-  let segment = [];
-  const tracer = () => {
-    if (segment.length > 1) svg.appendChild(dessin("polyline", { points: segment.join(" "), fill: "none", stroke: COULEURS.vert, "stroke-width": 2.5, "stroke-linejoin": "round", "stroke-linecap": "round" }));
-    segment = [];
-  };
-  valeurs.forEach((v, i) => { if (v === null || v === undefined) tracer(); else segment.push(x(i).toFixed(1) + "," + y(v).toFixed(1)); });
-  tracer();
-
-  valeurs.forEach((v, i) => {
-    if (v !== null && v !== undefined) {
-      const basse = normale && v < normale.basse;
-      const couleur = basse ? COULEURS.orange : COULEURS.vert;
-      const dernier = i === valeurs.length - 1;
-      svg.appendChild(dessin("circle", { cx: x(i), cy: y(v), r: dernier ? 4.5 : 3, fill: couleur, stroke: dernier ? "#FFFFFF" : "none", "stroke-width": 2 }));
-      svg.appendChild(texteGraphe(x(i), y(v) - 8, v, { couleur: basse ? COULEURS.orange : COULEURS.texte, gras: dernier }));
-    }
-    svg.appendChild(texteGraphe(x(i), H - 4, initialeJour(nuits[i].jour), { couleur: COULEURS.discret }));
-  });
-  carte.appendChild(svg);
-  carte.appendChild(element("div", "note-graphe", normale
-    ? "Bande verte : ta normale sur 28 nuits, de " + normale.basse + " à " + normale.haute + " ms. Un point orange signale une nuit sous ta normale."
-    : "Ta normale apparaîtra après 14 nuits mesurées."));
-  return carte;
-}
-
-function carteSommeil(nuits) {
-  const valeurs = nuits.map((n) => n.sommeil_h);
-  const derniere = valeurs[valeurs.length - 1];
-  const carte = carteGraphe("Sommeil", nuits.length + " nuits", derniere ? heuresMinutes(derniere) : null);
-  if (!valeurs.some((v) => v)) {
-    carte.appendChild(element("div", "vide", "Aucun sommeil enregistré sur ces nuits."));
-    return carte;
-  }
-
-  const L = 326, H = 116, haut = 16, bas = 96, marge = 14, largeurBarre = 26, SEUIL = 6;
-  const maxi = Math.max(9, ...valeurs.filter((v) => v));
-  const hauteur = (v) => v / maxi * (bas - haut);
-  const x = (i) => abscisse(i, valeurs.length, L, marge);
-  const courtes = valeurs.filter((v) => v && v < SEUIL).length;
-
-  const description = "Sommeil des " + nuits.length + " dernières nuits : " + valeurs.map((v) => (v ? heuresMinutes(v) : "non mesuré")).join(", ") + ". " + courtes + " nuit" + (courtes > 1 ? "s" : "") + " sous 6 heures.";
-  const svg = cadreGraphe(L, H, description);
-  let declarees = 0;
-
-  valeurs.forEach((v, i) => {
-    if (v) {
-      const courte = v < SEUIL;
-      const h = hauteur(v);
-      svg.appendChild(dessin("rect", { x: x(i) - largeurBarre / 2, y: bas - h, width: largeurBarre, height: h, rx: 3, fill: courte ? COULEURS.orangeBarre : COULEURS.vert }));
-      svg.appendChild(texteGraphe(x(i), bas - 6, heuresCourtes(v), { taille: 9, couleur: courte ? COULEURS.texte : "#FFFFFF" }));
-      if (nuits[i].sommeil_declare) {
-        declarees += 1;
-        svg.appendChild(dessin("circle", { cx: x(i), cy: bas - h - 7, r: 3, fill: COULEURS.texte }));
+  const droite = element("div");
+  if (v) {
+    droite.appendChild(element("div", "etiquette", "Pourquoi ce verdict"));
+    for (const signal of v.signaux) {
+      const morceaux = signal.texte.split(" -> ");
+      const ligne = element("div", "signal");
+      ligne.appendChild(iconeSignal(signal.points));
+      const bloc = element("div");
+      const constat = element("div", "constat", morceaux[0]);
+      if (morceaux[1]) {
+        constat.appendChild(document.createTextNode(" · "));
+        constat.appendChild(element("span", "conclusion p" + signal.points, morceaux[1]));
       }
+      bloc.appendChild(constat);
+      ligne.appendChild(bloc);
+      droite.appendChild(ligne);
     }
-    svg.appendChild(texteGraphe(x(i), H - 4, initialeJour(nuits[i].jour), { couleur: COULEURS.discret }));
-  });
-  const ySeuil = bas - hauteur(SEUIL);
-  svg.appendChild(dessin("line", { x1: 0, y1: ySeuil, x2: L, y2: ySeuil, stroke: COULEURS.texte, "stroke-width": 1, "stroke-dasharray": "3 4" }));
-  carte.appendChild(svg);
-
-  let note = "Pointillé : 6 h. En orange, les nuits plus courtes.";
-  if (declarees) note += " Point noir : durée que tu as corrigée dans la saisie.";
-  carte.appendChild(element("div", "note-graphe", note));
+  }
+  carte.appendChild(droite);
   return carte;
 }
 
-function carteCharge(jours, reveil) {
-  const carte = element("section", "carte graphe");
-  const entete = element("div", "titre-graphe");
-  const h2 = element("h2", null, "Forme et fatigue ");
-  h2.appendChild(element("span", "periode", "· " + jours.length + " jours"));
-  entete.appendChild(h2);
-  carte.appendChild(entete);
-  if (jours.length < 2) {
+function carteIndicateur(ind, nuits, periode) {
+  const carte = element("article", "carte indicateur");
+  const tete = element("div", "tete");
+  tete.appendChild(element("h2", null, ind.nom));
+  tete.appendChild(element("div", "source", ind.source));
+  carte.appendChild(tete);
+
+  const actuelles = valeursPeriode(nuits, ind.cle, periode.jours, 0);
+  const precedentes = valeursPeriode(nuits, ind.cle, periode.jours, periode.jours);
+  const valeur = moyenne(actuelles);
+
+  const grand = element("div", "grand");
+  grand.appendChild(element("span", "valeur", valeur === null ? "–" : ind.format(valeur)));
+  if (ind.unite) grand.appendChild(element("span", "unite", ind.unite));
+  carte.appendChild(grand);
+
+  // Évolution par rapport à la période précédente, si assez de nuits pour comparer
+  let evolution;
+  if (valeur === null) {
+    evolution = element("div", "evolution neutre", "Pas encore de mesure sur cette période");
+  } else if (precedentes.length < Math.min(periode.jours / 2, 14) || precedentes.length < 3) {
+    evolution = element("div", "evolution neutre", periode.jours === 365 ? "Pas encore d'année précédente pour comparer" : "Historique trop court pour comparer");
+  } else {
+    const ecart = valeur - moyenne(precedentes);
+    if (Math.abs(ecart) < ind.seuil) {
+      evolution = element("div", "evolution stable", "Stable " + periode.precedente);
+    } else {
+      const favorable = ecart * ind.sens > 0;
+      evolution = element("div", "evolution " + (favorable ? "favorable" : "surveiller"), ind.ecart(ecart) + " " + periode.precedente + " · " + (favorable ? "favorable" : "à surveiller"));
+    }
+  }
+  carte.appendChild(evolution);
+
+  // Courbe : chaque nuit sur la semaine et le mois, chaque semaine sur l'année
+  let points;
+  if (periode.jours <= 30) {
+    const parJour = new Map(nuits.map((n) => [n.jour, n[ind.cle]]));
+    points = joursPeriode(periode.jours).map((jour) => (parJour.has(jour) ? parJour.get(jour) : null));
+  } else {
+    points = [];
+    for (let semaine = 51; semaine >= 0; semaine -= 1) points.push(moyenne(valeursPeriode(nuits, ind.cle, 7, semaine * 7)));
+    while (points.length && points[0] === null) points.shift();
+  }
+  carte.appendChild(courbe(points));
+
+  // Les trois moyennes, toujours affichées
+  const premiere = nuits.length ? nuits[0].jour : etat.donnees.jour;
+  const anneeComplete = ecartJours(premiere, etat.donnees.jour) >= 360;
+  const moyennes = element("div", "trois-moyennes");
+  for (const [nom, jours] of [["7 jours", 7], ["30 jours", 30], [anneeComplete ? "365 jours" : "Depuis le " + dateCourte(premiere), 365]]) {
+    const bloc = element("div");
+    bloc.appendChild(element("div", "nom", nom));
+    const m = moyenne(valeursPeriode(nuits, ind.cle, jours, 0));
+    bloc.appendChild(element("div", "val", m === null ? "–" : ind.format(m)));
+    moyennes.appendChild(bloc);
+  }
+  carte.appendChild(moyennes);
+  return carte;
+}
+
+// Graphique large : lignes étirées sur toute la largeur, textes en HTML pour rester nets
+function zoneGraphe(series, options) {
+  const zone = element("div", "zone-graphe");
+  const toutes = [].concat(...series.map((s) => s.valeurs)).filter((v) => v !== null && v !== undefined).concat(options.bornes || []);
+  if (!toutes.length) return zone;
+  let mini = Math.min(...toutes), maxi = Math.max(...toutes);
+  const marge = (maxi - mini) * 0.12 || 2;
+  mini -= marge;
+  maxi += marge;
+  const y = (v) => (maxi - v) / (maxi - mini) * 200;
+
+  const svg = dessin("svg", { viewBox: "0 0 1000 200", preserveAspectRatio: "none", role: "img", "aria-label": options.description });
+  if (options.bande) {
+    svg.appendChild(dessin("rect", { x: 0, y: y(options.bande[1]), width: 1000, height: y(options.bande[0]) - y(options.bande[1]), fill: COULEURS.bande }));
+  }
+  for (const serie of series) {
+    const n = serie.valeurs.length;
+    let segment = [];
+    const tracer = () => {
+      if (segment.length > 1) {
+        svg.appendChild(dessin("polyline", {
+          points: segment.join(" "), fill: "none", stroke: serie.couleur, "stroke-width": serie.epaisseur || 2.5,
+          "stroke-dasharray": serie.pointilles || "none", "stroke-linejoin": "round", "vector-effect": "non-scaling-stroke",
+        }));
+      }
+      segment = [];
+    };
+    const total = options.total || n;  // nombre de jours de l'axe, au moins celui de la série
+    serie.valeurs.forEach((v, i) => {
+      if (v === null || v === undefined) tracer();
+      else segment.push((total === 1 ? 500 : i / (total - 1) * 1000).toFixed(1) + "," + y(v).toFixed(1));
+    });
+    tracer();
+  }
+  zone.appendChild(svg);
+
+  for (const valeur of options.axe || []) {
+    const etiquette = element("div", "axe-y", valeur.texte);
+    etiquette.style.top = (y(valeur.v) / 2) + "%";
+    zone.appendChild(etiquette);
+  }
+  for (const repere of options.reperes || []) {
+    const ligne = element("div", "ligne-repere");
+    ligne.style.left = repere.position + "%";
+    zone.appendChild(ligne);
+    const texte = element("div", "repere-graphe", repere.texte);
+    texte.style.left = repere.position + "%";
+    if (repere.position > 85) texte.style.transform = "translateX(-100%)";
+    else if (repere.position < 15) texte.style.transform = "translateX(0)";
+    if (repere.bas) texte.style.top = "30px";
+    zone.appendChild(texte);
+  }
+  return zone;
+}
+
+function carteVfcLarge(nuits, normale, periode) {
+  const carte = element("section", "carte large");
+  const tete = element("div", "tete-large");
+  tete.appendChild(element("h2", null, "VFC et bande de référence"));
+  const brute = periode.jours === 7;
+  tete.appendChild(element("div", "precision", (brute ? "Valeur de chaque nuit" : "Moyenne glissante sur 7 jours") + (normale ? ", bande calculée sur tes 28 dernières nuits" : "")));
+  carte.appendChild(tete);
+
+  const premiere = nuits.length ? nuits[0].jour : etat.donnees.jour;
+  const nombreJours = Math.min(periode.jours, ecartJours(premiere, etat.donnees.jour) + 1);
+  const jours = joursPeriode(Math.max(nombreJours, 2));
+  const parJour = new Map(nuits.map((n) => [n.jour, n.vfc]));
+  const valeurs = brute ? jours.map((j) => (parJour.has(j) ? parJour.get(j) : null)) : moyenneGlissante(nuits, "vfc", jours);
+  if (!valeurs.some((v) => v !== null)) {
+    carte.appendChild(element("div", "vide", "Aucune VFC mesurée sur cette période."));
+    return carte;
+  }
+  const mesurees = valeurs.filter((v) => v !== null);
+  const axe = normale
+    ? [{ v: normale.haute, texte: normale.haute + " ms" }, { v: normale.moyenne, texte: normale.moyenne + " ms" }, { v: normale.basse, texte: normale.basse + " ms" }]
+    : [{ v: Math.max(...mesurees), texte: Math.round(Math.max(...mesurees)) + " ms" }, { v: Math.min(...mesurees), texte: Math.round(Math.min(...mesurees)) + " ms" }];
+  carte.appendChild(zoneGraphe([{ valeurs: valeurs, couleur: COULEURS.vert }], {
+    bande: normale ? [normale.basse, normale.haute] : null,
+    bornes: normale ? [normale.basse, normale.haute] : [],
+    axe: axe,
+    description: "VFC " + (brute ? "de chaque nuit" : "lissée") + " sur " + jours.length + " jours, de " + Math.round(Math.min(...mesurees)) + " à " + Math.round(Math.max(...mesurees)) + " ms" + (normale ? ", ta normale allant de " + normale.basse + " à " + normale.haute + " ms" : ""),
+  }));
+  const axeX = element("div", "axe-x");
+  axeX.appendChild(element("span", null, dateCourte(jours[0])));
+  axeX.appendChild(element("span", null, "Aujourd'hui"));
+  carte.appendChild(axeX);
+
+  const legende = element("div", "legende-large");
+  const l1 = element("span"); l1.appendChild(element("span", "trait")); l1.appendChild(document.createTextNode(brute ? "VFC de la nuit" : "VFC lissée"));
+  legende.appendChild(l1);
+  if (normale) {
+    const l2 = element("span"); l2.appendChild(element("span", "pave")); l2.appendChild(document.createTextNode("Ta normale (" + normale.basse + " à " + normale.haute + " ms)"));
+    legende.appendChild(l2);
+  }
+  carte.appendChild(legende);
+  if (nombreJours < periode.jours) {
+    carte.appendChild(element("div", "note-graphe", "Ton historique commence le " + dateCourte(premiere) + " : la courbe s'allongera au fil des jours."));
+  }
+  return carte;
+}
+
+function carteEntrainement(d, nuits, periode) {
+  const carte = element("section", "carte large");
+  const tete = element("div", "tete-large");
+  tete.appendChild(element("h2", null, "Entraînement et ressenti"));
+  carte.appendChild(tete);
+  const c = d.charge_reveil || {};
+  const ressentis = valeursPeriode(nuits, "forme", periode.jours, 0);
+  const ressenti = moyenne(ressentis);
+  const lignes = [
+    ["Forme", "charge des 42 derniers jours", nombre(c.forme)],
+    ["Fatigue", "charge des 7 derniers jours", nombre(c.fatigue)],
+    ["Fraîcheur", "forme moins fatigue", c.fraicheur === null || c.fraicheur === undefined ? "–" : signe(c.fraicheur) + nombre(Math.abs(c.fraicheur))],
+    ["ACWR", "garde-fou : avertissement au-dessus de 1,3, blocage au-dessus de 1,5", nombre(c.acwr, 2)],
+    ["Ressenti du matin", ressentis.length ? "moyenne sur " + ressentis.length + " saisie" + (ressentis.length > 1 ? "s" : "") + " (" + periode.nom + ")" : "aucune saisie sur cette période", ressenti === null ? "–" : nombre(ressenti, 1) + " / 5"],
+    ["VO2 max estimée", "course à pied", null],
+  ];
+  const liste = element("div", "liste-valeurs");
+  for (const [nom, indice, valeur] of lignes) {
+    const ligne = element("div", "ligne-valeur");
+    const bloc = element("div");
+    bloc.appendChild(element("div", "nom-valeur", nom));
+    bloc.appendChild(element("div", "indice", indice));
+    ligne.appendChild(bloc);
+    ligne.appendChild(element("div", "val" + (valeur === null ? " attente" : ""), valeur === null ? "étape 7b" : valeur));
+    liste.appendChild(ligne);
+  }
+  carte.appendChild(liste);
+  return carte;
+}
+
+// ---------- Onglet Préparation ----------
+function semaineIso(jourIso) {
+  const d = jourDate(jourIso);
+  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+  const premierJeudi = new Date(d.getFullYear(), 0, 4);
+  return 1 + Math.round(((d - premierJeudi) / 86400000 - 3 + ((premierJeudi.getDay() + 6) % 7)) / 7);
+}
+
+function duree(minutes) {
+  if (minutes === null || minutes === undefined) return "–";
+  const total = Math.round(minutes);
+  if (total < 60) return total + " min";
+  return Math.floor(total / 60) + " h " + String(total % 60).padStart(2, "0");
+}
+
+function afficherPreparation() {
+  const d = etat.donnees;
+  const zone = $("contenu-preparation");
+  if (!d) return;
+  vider(zone);
+  zone.appendChild(carteCourses(d.courses || []));
+  zone.appendChild(carteVolume(d.semaines));
+  zone.appendChild(carteFormeFatigue(d.serie_charge || d.charge || [], d.charge_reveil || {}));
+  zone.appendChild(carteIndicateursPrepa(d.semaines));
+
+  const recentes = $("seances-recentes");
+  vider(recentes);
+  recentes.appendChild(carteSeancesRecentes(d.seances || []));
+}
+
+function carteCourses(courses) {
+  const grille = element("section", "grille-courses");
+  grille.setAttribute("aria-label", "Prochaines courses");
+  courses.forEach((course, i) => {
+    const carte = element("article", "carte course" + (i === 0 ? " prochaine" : ""));
+    carte.appendChild(element("div", "tag", i === 0 ? "Prochaine course" : (course.role || "Course")));
+    carte.appendChild(element("h2", null, course.nom));
+    carte.appendChild(element("div", "detail", (course.distance ? course.distance + " · " : "") + dateLongue(course.jour).toLowerCase() + " " + jourDate(course.jour).getFullYear()));
+    carte.appendChild(element("div", "compte", course.dans_jours === 0 ? "Aujourd'hui" : "J-" + course.dans_jours));
+    if (course.objectif) carte.appendChild(element("div", "objectif", course.objectif));
+    grille.appendChild(carte);
+  });
+  return grille;
+}
+
+function carteVolume(semaines) {
+  const carte = element("section", "carte large");
+  const tete = element("div", "tete-large");
+  tete.appendChild(element("h2", null, "Volume de la semaine"));
+  tete.appendChild(element("div", "precision", "Semaine en cours, du lundi à aujourd'hui"));
+  carte.appendChild(tete);
+  if (!semaines || !semaines.length) {
+    carte.appendChild(element("div", "vide", "Le volume par semaine s'affichera après la prochaine matinée."));
+    return carte;
+  }
+  const actuelle = semaines[semaines.length - 1];
+  const precedentes = semaines.slice(-5, -1);
+  const corps = element("div", "volume");
+
+  const gauche = element("div");
+  const chiffres = element("dl", "chiffres-volume");
+  const valeurs = [
+    ["Course à pied", nombre(actuelle.km_course, 1) + " km"],
+    ["Dénivelé positif", nombre(actuelle.denivele_m) + " m"],
+    ["Temps de course", duree(actuelle.minutes_course)],
+    ["Home trainer", duree(actuelle.minutes_velo)],
+  ];
+  if (actuelle.minutes_renfo) valeurs.push(["Renforcement", duree(actuelle.minutes_renfo)]);
+  for (const [nom, valeur] of valeurs) {
+    const bloc = element("div");
+    bloc.appendChild(element("dt", null, nom));
+    bloc.appendChild(element("dd", null, valeur));
+    chiffres.appendChild(bloc);
+  }
+  gauche.appendChild(chiffres);
+  if (precedentes.length) {
+    const km = moyenne(precedentes.map((s) => s.km_course));
+    const minutes = moyenne(precedentes.map((s) => s.minutes_course));
+    if (km > 0) {
+      // Même repère que le garde-fou R2 : au-delà de +30 %, la hausse est à surveiller
+      const ecart = Math.round((actuelle.km_course - km) / km * 100);
+      const enCours = actuelle.semaine_du !== decalerJour(etat.donnees.jour, -6);
+      let texte = signe(ecart) + Math.abs(ecart) + " % de kilomètres vs moyenne des 4 semaines précédentes";
+      let classe;
+      if (ecart > 30) { texte += " · hausse à surveiller (repère : +30 %)"; classe = "surveiller"; }
+      else if (ecart >= -10) { texte += " · progression maîtrisée"; classe = "favorable"; }
+      else { texte += enCours ? " · semaine pas encore terminée" : " · semaine allégée"; classe = "neutre"; }
+      const ligne = element("div", "evolution " + classe, texte);
+      ligne.style.marginTop = "12px";
+      ligne.style.fontSize = "13px";
+      ligne.style.fontWeight = "500";
+      gauche.appendChild(ligne);
+    }
+    const repere = element("div", "aide", "Moyenne des 4 semaines précédentes : " + nombre(km, 1) + " km et " + duree(minutes) + " de course par semaine.");
+    repere.style.marginTop = "6px";
+    gauche.appendChild(repere);
+  }
+  corps.appendChild(gauche);
+
+  const droite = element("div");
+  const huit = semaines.slice(-8);
+  const maxi = Math.max(1, ...huit.map((s) => s.km_course));
+  droite.appendChild(element("div", "aide", "Kilomètres de course, 8 dernières semaines"));
+  const barres = element("div", "barres");
+  barres.setAttribute("role", "img");
+  barres.setAttribute("aria-label", "Kilomètres par semaine : " + huit.map((s) => nombre(s.km_course, 1)).join(", ") + " km, la dernière semaine étant en cours");
+  barres.style.marginTop = "8px";
+  const etiquettes = element("div", "etiquettes-barres");
+  etiquettes.setAttribute("aria-hidden", "true");
+  for (const s of huit) {
+    const colonne = element("div", "colonne" + (s.en_cours ? " en-cours" : ""));
+    colonne.appendChild(element("span", "km", nombre(s.km_course, s.km_course < 10 ? 1 : 0)));
+    const barre = element("div", "barre");
+    barre.style.height = (s.km_course / maxi * 100 * 0.82) + "%";
+    colonne.appendChild(barre);
+    barres.appendChild(colonne);
+    etiquettes.appendChild(element("span", null, s.en_cours ? "En cours" : "S" + semaineIso(s.semaine_du)));
+  }
+  droite.appendChild(barres);
+  droite.appendChild(etiquettes);
+  corps.appendChild(droite);
+  carte.appendChild(corps);
+  return carte;
+}
+
+function carteFormeFatigue(serie, reveil) {
+  const carte = element("section", "carte large");
+  const tete = element("div", "tete-large");
+  tete.appendChild(element("h2", null, "Forme, fatigue et fraîcheur"));
+  tete.appendChild(element("div", "precision", serie.length + " derniers jours, jusqu'à la prochaine course"));
+  carte.appendChild(tete);
+  if (serie.length < 2) {
     carte.appendChild(element("div", "vide", "Pas encore assez d'historique."));
     return carte;
   }
+  const corps = element("div", "rangee deux-un");
+  const graphe = element("div");
+  graphe.style.display = "flex";
+  graphe.style.flexDirection = "column";
+  graphe.style.gap = "8px";
+  const formes = serie.map((j) => j.forme), fatigues = serie.map((j) => j.fatigue);
+  const maxi = Math.max(...formes, ...fatigues);
 
-  // Légende avec les valeurs du réveil (les mêmes que sur l'onglet Aujourd'hui)
-  const legende = element("div", "legende");
-  const elementLegende = (trait, nom, valeur) => {
-    const bloc = element("div");
-    const echantillon = dessin("svg", { width: 22, height: 8, viewBox: "0 0 22 8", "aria-hidden": "true" });
-    echantillon.appendChild(trait);
-    bloc.appendChild(echantillon);
-    bloc.appendChild(document.createTextNode(nom + (valeur === undefined ? "" : " ")));
-    if (valeur !== undefined) bloc.appendChild(element("strong", null, nombre(valeur)));
-    return bloc;
-  };
-  legende.appendChild(elementLegende(dessin("line", { x1: 0, y1: 4, x2: 22, y2: 4, stroke: COULEURS.vert, "stroke-width": 2.5 }), "Forme", reveil.forme));
-  legende.appendChild(elementLegende(dessin("line", { x1: 0, y1: 4, x2: 22, y2: 4, stroke: COULEURS.orange, "stroke-width": 2.5, "stroke-dasharray": "5 3" }), "Fatigue", reveil.fatigue));
-  legende.appendChild(elementLegende(dessin("rect", { x: 5, y: 0, width: 12, height: 8, rx: 2, fill: COULEURS.barreCharge }), "Charge du jour"));
-  carte.appendChild(legende);
+  // L'axe va jusqu'à la prochaine course si elle tombe dans les 8 semaines
+  const premierJour = serie[0].jour, dernierJour = serie[serie.length - 1].jour;
+  const prochaine = (etat.donnees.courses || []).find((c) => c.dans_jours >= 0 && c.dans_jours <= 56);
+  const finAxe = prochaine && prochaine.jour > dernierJour ? prochaine.jour : dernierJour;
+  const total = ecartJours(premierJour, finAxe) + 1;
+  const position = (jour) => ecartJours(premierJour, jour) / (total - 1) * 100;
+  const reperes = [];
+  for (const course of etat.donnees.courses_recentes || []) {
+    if (course.jour >= premierJour && course.jour <= dernierJour) reperes.push({ position: position(course.jour), texte: course.nom });
+  }
+  reperes.push({ position: position(etat.donnees.jour), texte: "Aujourd'hui" });
+  if (prochaine) reperes.push({ position: position(prochaine.jour), texte: prochaine.nom, bas: true });
+  graphe.appendChild(zoneGraphe([
+    { valeurs: fatigues, couleur: COULEURS.orange, epaisseur: 1.5, pointilles: "5 4" },
+    { valeurs: formes, couleur: COULEURS.vert, epaisseur: 3 },
+  ], {
+    bornes: [0],
+    total: total,
+    reperes: reperes,
+    axe: [{ v: Math.round(maxi), texte: String(Math.round(maxi)) }, { v: 0, texte: "0" }],
+    description: "Sur " + serie.length + " jours, la forme va de " + Math.min(...formes) + " à " + Math.max(...formes) + " et la fatigue de " + Math.min(...fatigues) + " à " + Math.max(...fatigues) + ".",
+  }));
+  const axeX = element("div", "axe-x");
+  axeX.appendChild(element("span", null, dateCourte(premierJour)));
+  axeX.appendChild(element("span", null, dateCourte(finAxe)));
+  graphe.appendChild(axeX);
+  const legende = element("div", "legende-large");
+  const l1 = element("span"); l1.appendChild(element("span", "trait")); l1.appendChild(document.createTextNode("Forme (trait épais)"));
+  const l2 = element("span"); l2.appendChild(element("span", "trait fin")); l2.appendChild(document.createTextNode("Fatigue (pointillés)"));
+  legende.appendChild(l1);
+  legende.appendChild(l2);
+  graphe.appendChild(legende);
+  corps.appendChild(graphe);
 
-  const L = 326, H = 120, haut = 18, bas = 100, marge = 10;
-  const maxi = Math.max(10, ...jours.map((j) => Math.max(j.forme || 0, j.fatigue || 0))) * 1.12;
-  const maxCharge = Math.max(1, ...jours.map((j) => j.charge || 0));
-  const y = (v) => bas - v / maxi * (bas - haut);
-  const x = (i) => abscisse(i, jours.length, L, marge);
-
-  const pic = jours.reduce((meilleur, j, i) => ((j.fatigue || 0) > (jours[meilleur].fatigue || 0) ? i : meilleur), 0);
-  const description = "Sur " + jours.length + " jours, la forme va de " + Math.min(...jours.map((j) => j.forme)) + " à " + Math.max(...jours.map((j) => j.forme))
-    + " et la fatigue de " + Math.min(...jours.map((j) => j.fatigue)) + " à " + Math.max(...jours.map((j) => j.fatigue))
-    + ", avec un pic de fatigue le " + dateCourte(jours[pic].jour) + ".";
-  const svg = cadreGraphe(L, H, description);
-
-  svg.appendChild(dessin("line", { x1: 0, y1: bas, x2: L, y2: bas, stroke: COULEURS.grille, "stroke-width": 1 }));
-  jours.forEach((j, i) => {
-    if (j.charge > 0) {
-      const h = j.charge / maxCharge * (bas - haut) * 0.4;
-      svg.appendChild(dessin("rect", { x: x(i) - 6, y: bas - h, width: 12, height: h, rx: 2, fill: COULEURS.barreCharge }));
-    }
-  });
-  const points = (cle) => jours.map((j, i) => x(i).toFixed(1) + "," + y(j[cle] || 0).toFixed(1)).join(" ");
-  svg.appendChild(dessin("polyline", { points: points("fatigue"), fill: "none", stroke: COULEURS.orange, "stroke-width": 2.5, "stroke-dasharray": "5 3", "stroke-linejoin": "round" }));
-  svg.appendChild(dessin("polyline", { points: points("forme"), fill: "none", stroke: COULEURS.vert, "stroke-width": 2.5, "stroke-linejoin": "round", "stroke-linecap": "round" }));
-
-  const xPic = x(pic);
-  const ancre = xPic < 50 ? "start" : xPic > L - 50 ? "end" : "middle";
-  svg.appendChild(texteGraphe(xPic, Math.max(10, y(jours[pic].fatigue) - 7), "pic le " + dateCourte(jours[pic].jour), { ancre: ancre }));
-  svg.appendChild(texteGraphe(x(0), H - 4, dateCourte(jours[0].jour), { ancre: "start", couleur: COULEURS.discret }));
-  svg.appendChild(texteGraphe(x(jours.length - 1), H - 4, dateCourte(jours[jours.length - 1].jour), { ancre: "end", couleur: COULEURS.discret }));
-  carte.appendChild(svg);
-  carte.appendChild(element("div", "note-graphe", "Fatigue au-dessus de la forme : tu encaisses une charge récente. En dessous : tu es frais."));
+  const droite = element("div");
+  const liste = element("div", "liste-valeurs");
+  const lignes = [
+    ["Forme", nombre(reveil.forme)],
+    ["Fatigue", nombre(reveil.fatigue)],
+    ["Fraîcheur aujourd'hui", reveil.fraicheur === null || reveil.fraicheur === undefined ? "–" : signe(reveil.fraicheur) + nombre(Math.abs(reveil.fraicheur))],
+    ["ACWR", nombre(reveil.acwr, 2)],
+  ];
+  for (const [nom, valeur] of lignes) {
+    const ligne = element("div", "ligne-valeur");
+    ligne.appendChild(element("div", "nom-valeur", nom));
+    ligne.appendChild(element("div", "val", valeur));
+    liste.appendChild(ligne);
+  }
+  droite.appendChild(liste);
+  droite.appendChild(element("div", "aide", "Objectif d'affûtage : une fraîcheur positive le jour de la course, sans laisser trop baisser la forme. La projection jusqu'à la course arrivera plus tard."));
+  corps.appendChild(droite);
+  carte.appendChild(corps);
   return carte;
 }
 
+function carteIndicateursPrepa(semaines) {
+  const grille = element("section", "grille-indicateurs");
+  grille.setAttribute("aria-label", "Indicateurs de préparation");
+  if (semaines && semaines.length >= 2) {
+    const actuelle = semaines[semaines.length - 1], precedente = semaines[semaines.length - 2];
+
+    // Sortie longue
+    const longue = element("article", "carte indicateur");
+    const t1 = element("div", "tete");
+    t1.appendChild(element("h2", null, "Sortie longue"));
+    t1.appendChild(element("div", "source", "Garmin"));
+    longue.appendChild(t1);
+    const g1 = element("div", "grand");
+    g1.appendChild(element("span", "valeur", actuelle.sortie_longue_min ? duree(actuelle.sortie_longue_min) : "–"));
+    longue.appendChild(g1);
+    if (actuelle.sortie_longue_min && precedente.sortie_longue_min) {
+      const ecart = actuelle.sortie_longue_min - precedente.sortie_longue_min;
+      longue.appendChild(element("div", "evolution " + (ecart >= 0 ? "favorable" : "neutre"), signe(ecart) + duree(Math.abs(ecart)) + " vs semaine précédente (" + duree(precedente.sortie_longue_min) + ")"));
+    } else {
+      longue.appendChild(element("div", "evolution neutre", actuelle.sortie_longue_min ? "Pas de course la semaine précédente" : "Pas encore de course cette semaine · semaine précédente : " + duree(precedente.sortie_longue_min)));
+    }
+    longue.appendChild(element("div", "aide", "La plus longue course de la semaine. À faire monter progressivement jusqu'au NTMF."));
+    grille.appendChild(longue);
+
+    // Régularité
+    const quatre = semaines.slice(-5, -1);
+    const regularite = element("article", "carte indicateur");
+    const t2 = element("div", "tete");
+    t2.appendChild(element("h2", null, "Régularité"));
+    t2.appendChild(element("div", "source", "Garmin"));
+    regularite.appendChild(t2);
+    const g2 = element("div", "grand");
+    g2.appendChild(element("span", "valeur", String(actuelle.sorties_course)));
+    g2.appendChild(element("span", "unite", "sortie" + (actuelle.sorties_course > 1 ? "s" : "") + " cette semaine"));
+    regularite.appendChild(g2);
+    regularite.appendChild(element("div", "evolution neutre", nombre(moyenne(quatre.map((s) => s.sorties_course)), 1) + " sorties par semaine en moyenne sur les 4 semaines précédentes"));
+    regularite.appendChild(element("div", "aide", "La régularité compte plus que le contenu de chaque séance prise isolément."));
+    grille.appendChild(regularite);
+  }
+
+  const venir = element("article", "carte indicateur attente");
+  venir.appendChild(element("h2", null, "Bientôt dans cet onglet"));
+  const liste = element("ul", "a-venir");
+  for (const texte of ["Séances réalisées sur prévues", "Répartition d'intensité", "Efficience aérobie", "Dérive cardiaque en sortie longue", "Rythme de perte de poids (Withings)", "Glucides en sortie longue"]) {
+    liste.appendChild(element("li", null, texte));
+  }
+  venir.appendChild(liste);
+  grille.appendChild(venir);
+  return grille;
+}
+
+// ---------- En-tête du PC ----------
+function afficherEntetePc() {
+  const d = etat.donnees;
+  if (!d) return;
+  const heure = (d.genere_le || "").slice(11, 16);
+  $("pc-sous-titre").textContent = dateLongue(d.jour) + " " + jourDate(d.jour).getFullYear() + (heure ? " · mis à jour à " + heure.replace(":", " h ") : "");
+  $("bouton-copier-pc").disabled = !d.rapport;
+  const bandeaux = $("pc-bandeaux");
+  vider(bandeaux);
+  if (d.jour !== aujourdhuiLocal()) {
+    bandeaux.appendChild(bandeau("info", "Ces données datent du " + dateLongue(d.jour).toLowerCase() + ". Elles seront mises à jour par ta saisie du matin sur le téléphone, ou par la synchro automatique de 10 h."));
+  }
+  if (d.synchro && d.synchro.ok === false) {
+    bandeaux.appendChild(bandeau("alerte", d.synchro.message + " Le verdict s'appuie sur les données déjà enregistrées."));
+  }
+}
+
+// ---------- Séances récentes ----------
 function carteSeancesRecentes(seances) {
   const carte = carteGraphe("Séances", "14 derniers jours");
   carte.classList.add("liste-jours");
@@ -972,7 +1606,7 @@ function afficherSemaine() {
     zone.appendChild(bandeau("info", "Pas encore de plan pour cette semaine. Demande-le à ton coach, puis colle-le avec le bouton ci-dessous."));
     return;
   }
-  $("semaine-periode").textContent = periodeSemaine(s.semaine_du) + " · plan du coach";
+  $("semaine-periode").textContent = periodeSemaine(s.semaine_du) + " · plan du coach et garde-fous";
 
   if (s.erreurs) {
     const carte = bandeau("erreur", "Le plan du coach n'a pas pu être lu :");
@@ -1264,10 +1898,10 @@ async function envoyerPlan() {
         $("champ-plan").value = "";
         statutPlan("", "");
         ouvrirPlan(false);
-        afficherOnglet("semaine");
+        afficherOnglet("preparation");
         toast("Plan enregistré.");
       } else if (etat.donnees && etat.donnees.plan_refuse) {
-        statutPlan("erreur", "Plan refusé : les erreurs sont affichées en haut de l'onglet. Corrige-les avec ton coach et colle le plan corrigé.");
+        statutPlan("erreur", "Plan refusé : les erreurs sont affichées en haut du plan de la semaine. Corrige-les avec ton coach et colle le plan corrigé.");
       } else {
         statutPlan("erreur", "L'enregistrement s'est terminé en erreur. Le plan précédent est conservé.", { texte: "Voir le détail sur GitHub", url: execution.html_url });
       }
@@ -1319,19 +1953,29 @@ function oublierJeton() {
 }
 
 // ---------- Navigation ----------
+const ECRAN_PC = window.matchMedia("(min-width: 900px)");
+
 function afficherOnglet(nom) {
-  // Le CSS décide de ce qui s'affiche : un onglet sur téléphone, tous côte à côte sur PC
-  document.body.dataset.onglet = nom;
-  for (const bouton of document.querySelectorAll("nav.onglets button")) {
-    if (bouton.dataset.onglet === nom) bouton.setAttribute("aria-current", "page");
+  // Sur PC, Aujourd'hui et Saisie n'existent pas : on montre Santé à la place
+  etat.onglet = nom;
+  const visible = ECRAN_PC.matches && (nom === "aujourdhui" || nom === "saisie") ? "sante" : nom;
+  document.body.dataset.onglet = visible;
+  for (const bouton of document.querySelectorAll("nav.onglets button, nav.onglets-pc button")) {
+    if (bouton.dataset.onglet === visible) bouton.setAttribute("aria-current", "page");
     else bouton.removeAttribute("aria-current");
   }
   document.querySelector("main").scrollTop = 0;
 }
 
+// Quand la fenêtre passe de la taille téléphone à la taille PC (ou l'inverse)
+ECRAN_PC.addEventListener("change", () => afficherOnglet(etat.onglet));
+
 // ---------- Démarrage ----------
-for (const bouton of document.querySelectorAll("nav.onglets button")) {
+for (const bouton of document.querySelectorAll("nav.onglets button, nav.onglets-pc button")) {
   bouton.addEventListener("click", () => afficherOnglet(bouton.dataset.onglet));
+}
+for (const bouton of document.querySelectorAll("[data-periode]")) {
+  bouton.addEventListener("click", () => choisirPeriode(bouton.dataset.periode));
 }
 for (const bouton of document.querySelectorAll("[data-aller]")) {
   bouton.addEventListener("click", () => afficherOnglet(bouton.dataset.aller));
@@ -1345,7 +1989,9 @@ $("bouton-coller-plan").addEventListener("click", () => ouvrirPlan(true));
 $("bouton-annuler-plan").addEventListener("click", () => ouvrirPlan(false));
 $("bouton-envoyer-plan").addEventListener("click", envoyerPlan);
 $("bouton-copier").addEventListener("click", copierRapport);
+$("bouton-copier-pc").addEventListener("click", copierRapport);
 $("bouton-actualiser").addEventListener("click", actualiser);
+$("bouton-actualiser-pc").addEventListener("click", actualiser);
 $("bouton-enregistrer-jeton").addEventListener("click", enregistrerJeton);
 $("bouton-oublier-jeton").addEventListener("click", oublierJeton);
 
@@ -1357,13 +2003,10 @@ document.addEventListener("visibilitychange", () => {
 });
 
 preparerSaisie();
+choisirPeriode(lirePeriode());
 if (lireJeton()) {
   afficherOnglet("aujourdhui");
-  chargerDonnees().catch((e) => {
-    const bandeaux = $("aujourdhui-bandeaux");
-    vider(bandeaux);
-    bandeaux.appendChild(bandeau("erreur", e.message));
-  });
+  chargerDonnees().catch(afficherErreurChargement);
 } else {
   afficherOnglet("reglages");
   $("reglages-statut").appendChild(bandeau("info", "Première ouverture : colle ta clé d'accès GitHub pour connecter l'appli à tes données."));
