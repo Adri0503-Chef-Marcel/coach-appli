@@ -350,6 +350,15 @@ nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; 
 .liste-valeurs .val { font-family: var(--titre); font-size: 20px; font-weight: 700; white-space: nowrap; }
 .liste-valeurs .val.attente { font-family: inherit; font-size: 13px; font-weight: 500; color: #9AA39C; }
 
+/* Poids et trajectoire cible */
+.chiffres-poids { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin: 0; }
+@media (min-width: 900px) { .chiffres-poids { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.chiffres-poids dt { font-size: 12px; color: var(--discret); }
+.chiffres-poids dd { margin: 2px 0 0; font-family: var(--titre); font-size: 22px; font-weight: 700; }
+.chiffres-poids dd small { font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 500; color: var(--discret); }
+.regles-poids { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+.trait.pointille { border-top: 2px dashed var(--texte); }
+
 /* Préparation */
 .grille-courses { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 @media (min-width: 900px) { .grille-courses { gap: 16px; } }
@@ -386,6 +395,14 @@ nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; 
 <div class="appli">
 <main>
 <div class="contenu-pc">
+
+  <!-- Retour de l'autorisation Withings (python withings.py) : le code à coller dans PowerShell -->
+  <section id="code-withings" class="carte" style="display: flex; flex-direction: column; gap: 10px; margin: 16px 0" hidden>
+    <h2>Code Withings reçu</h2>
+    <div class="aide">Copie-le et colle-le tout de suite dans PowerShell : Withings ne le garde valable que 30 secondes.</div>
+    <div id="code-withings-valeur" style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 15px; word-break: break-all; background: var(--fond); border-radius: 10px; padding: 10px 12px"></div>
+    <button type="button" class="bouton principal" id="bouton-copier-code">Copier le code</button>
+  </section>
 
   <!-- ================= En-tête du tableau de bord (PC uniquement) ================= -->
   <header class="entete-pc">
@@ -740,6 +757,9 @@ function afficherAujourdhui() {
   if (d.synchro && d.synchro.ok === false) {
     bandeaux.appendChild(bandeau("alerte", d.synchro.message + " Le verdict s'appuie sur les données déjà enregistrées."));
   }
+  if (d.synchro && d.synchro.withings && d.synchro.withings.ok === false) {
+    bandeaux.appendChild(bandeau("alerte", d.synchro.withings.message));
+  }
   if (d.alerte_precoce && d.alerte_precoce.niveau >= 2) {
     bandeaux.appendChild(bandeau("alerte", d.alerte_precoce.message + " Détail dans l'onglet Santé."));
   }
@@ -1000,11 +1020,9 @@ const INDICATEURS = [
   { cle: "sommeil_score", nom: "Score de sommeil", source: "Garmin", unite: "/ 100", sens: 1, seuil: 1, format: (v) => nombre(v), ecart: (e) => signe(e) + nombre(Math.abs(e)) + " pt" + (Math.round(Math.abs(e)) > 1 ? "s" : "") },
   { cle: "sommeil_h", nom: "Durée de sommeil", source: "Garmin, corrigée par ta saisie", unite: "", sens: 1, seuil: 5 / 60, format: (v) => heuresMinutes(v), ecart: (e) => signe(e) + Math.round(Math.abs(e) * 60) + " min" },
   { cle: "stress", nom: "Stress", source: "Garmin, moyenne de la journée", unite: "/ 100", sens: -1, seuil: 1, format: (v) => nombre(v), ecart: (e) => signe(e) + nombre(Math.abs(e)) + " pt" + (Math.round(Math.abs(e)) > 1 ? "s" : "") },
+  { cle: "poids", donnees: "pesees", nom: "Poids", source: "Withings", unite: "kg", sens: -1, seuil: 0.1, format: (v) => nombre(v, 1), ecart: (e) => signe(e) + nombre(Math.abs(e), 1) + " kg" },
+  { cle: "masse_maigre_pct", donnees: "pesees", nom: "Masse maigre", source: "Withings", unite: "%", sens: 1, seuil: 0.2, format: (v) => nombre(v, 1), ecart: (e) => signe(e) + nombre(Math.abs(e), 1) + " pt" },
   { cle: "body_battery", nom: "Body Battery au réveil", source: "Garmin", unite: "/ 100", sens: 1, seuil: 1, format: (v) => nombre(v), ecart: (e) => signe(e) + nombre(Math.abs(e)) + " pt" + (Math.round(Math.abs(e)) > 1 ? "s" : "") },
-];
-const EN_ATTENTE = [
-  { nom: "Poids", source: "Withings", texte: "Arrive avec la balance Withings" },
-  { nom: "Masse maigre", source: "Withings", texte: "Arrive avec la balance Withings" },
 ];
 
 function signe(valeur) { return valeur > 0 ? "+" : valeur < 0 ? "−" : ""; }
@@ -1031,21 +1049,24 @@ function afficherSante() {
 
   const grille = element("section", "grille-indicateurs");
   grille.setAttribute("aria-label", "Indicateurs de récupération");
+  const pesees = d.pesees || [];
   for (const indicateur of INDICATEURS) {
-    const carte = carteIndicateur(indicateur, nuits, periode);
+    let carte;
+    if (indicateur.donnees === "pesees" && !pesees.length) {
+      // Withings pas encore synchronisé : carte en attente
+      carte = element("article", "carte indicateur attente");
+      const tete = element("div", "tete");
+      tete.appendChild(element("h2", null, indicateur.nom));
+      tete.appendChild(element("div", "source", indicateur.source));
+      carte.appendChild(tete);
+      const grand = element("div", "grand");
+      grand.appendChild(element("span", "valeur", "–"));
+      carte.appendChild(grand);
+      carte.appendChild(element("div", "aide", "En attente de la première synchro Withings."));
+    } else {
+      carte = carteIndicateur(indicateur, indicateur.donnees === "pesees" ? pesees : nuits, periode);
+    }
     if (indicateur.cle === "body_battery") carte.classList.add("fin-pc");
-    grille.appendChild(carte);
-  }
-  for (const attente of EN_ATTENTE) {
-    const carte = element("article", "carte indicateur attente");
-    const tete = element("div", "tete");
-    tete.appendChild(element("h2", null, attente.nom));
-    tete.appendChild(element("div", "source", attente.source));
-    carte.appendChild(tete);
-    const grand = element("div", "grand");
-    grand.appendChild(element("span", "valeur", "–"));
-    carte.appendChild(grand);
-    carte.appendChild(element("div", "aide", attente.texte + "."));
     grille.appendChild(carte);
   }
   zone.appendChild(grille);
@@ -1055,12 +1076,9 @@ function afficherSante() {
   rangee.appendChild(carteEntrainement(d, nuits, periode));
   zone.appendChild(rangee);
 
-  const poids = element("section", "carte pointillee");
-  poids.appendChild(element("h2", null, "Poids et trajectoire cible"));
-  poids.appendChild(element("div", "aide", "La courbe de poids, la cible de début avril et le rythme de perte arriveront avec la balance Withings."));
-  zone.appendChild(poids);
+  zone.appendChild(cartePoids(d.poids, pesees));
 
-  zone.appendChild(element("div", "sources", "Sources : Garmin (nuits, activités) et ta saisie du matin (ressenti, sommeil réel). Withings viendra compléter le poids et la composition corporelle."));
+  zone.appendChild(element("div", "sources", "Sources : Garmin (nuits, activités), Withings (poids, composition corporelle) et ta saisie du matin (ressenti, sommeil réel)."));
 }
 
 function carteVerdictPc(d) {
@@ -1591,11 +1609,12 @@ function carteIndicateursPrepa(semaines) {
   }
 
   grille.appendChild(carteIntensite(etat.donnees.intensite));
+  grille.appendChild(carteRythmePoids(etat.donnees.poids));
 
   const venir = element("article", "carte indicateur attente");
   venir.appendChild(element("h2", null, "Bientôt dans cet onglet"));
   const liste = element("ul", "a-venir");
-  for (const texte of ["Séances réalisées sur prévues", "Efficience aérobie", "Dérive cardiaque en sortie longue", "Rythme de perte de poids (Withings)", "Glucides en sortie longue"]) {
+  for (const texte of ["Séances réalisées sur prévues", "Efficience aérobie", "Dérive cardiaque en sortie longue", "Glucides en sortie longue"]) {
     liste.appendChild(element("li", null, texte));
   }
   venir.appendChild(liste);
@@ -1646,6 +1665,135 @@ function carteIntensite(intensite) {
   return carte;
 }
 
+// ---------- Poids ----------
+function kg(valeur) { return valeur === null || valeur === undefined ? "–" : nombre(valeur, 1) + " kg"; }
+
+function cartePoids(poids, pesees) {
+  const carte = element("section", "carte large");
+  const tete = element("div", "tete-large");
+  tete.appendChild(element("h2", null, "Poids et trajectoire cible"));
+  carte.appendChild(tete);
+  if (!poids || !pesees.length) {
+    carte.classList.add("pointillee");
+    carte.appendChild(element("div", "aide", "La courbe de poids, la cible de début avril et le rythme de perte apparaîtront après la première synchro Withings."));
+    return carte;
+  }
+  tete.appendChild(element("div", "precision", "Moyenne sur 7 jours, trajectoire cible en pointillés"));
+
+  // Axe : des 90 derniers jours jusqu'au NTMF
+  const trajectoire = poids.trajectoire;
+  const fin = trajectoire[trajectoire.length - 1].jour;
+  const debut = decalerJour(etat.donnees.jour, -89) < trajectoire[0].jour ? decalerJour(etat.donnees.jour, -89) : trajectoire[0].jour;
+  const total = ecartJours(debut, fin) + 1;
+  const jours = [];
+  for (let i = 0; i < total; i += 1) jours.push(decalerJour(debut, i));
+
+  // Poids mesuré : moyenne des pesées des 7 derniers jours, jusqu'à aujourd'hui
+  const mesure = jours.map((jour) => {
+    if (jour > etat.donnees.jour) return null;
+    const semaine = pesees.filter((p) => p.jour <= jour && p.jour > decalerJour(jour, -7) && p.poids);
+    return semaine.length ? moyenne(semaine.map((p) => p.poids)) : null;
+  });
+  // Trajectoire cible : droite du départ à la cible, puis palier jusqu'au NTMF
+  const cible = jours.map((jour) => {
+    for (let i = 0; i < trajectoire.length - 1; i += 1) {
+      const a = trajectoire[i], b = trajectoire[i + 1];
+      if (jour >= a.jour && jour <= b.jour) {
+        const part = ecartJours(a.jour, jour) / Math.max(1, ecartJours(a.jour, b.jour));
+        return a.poids + (b.poids - a.poids) * part;
+      }
+    }
+    return null;
+  });
+
+  const position = (jour) => ecartJours(debut, jour) / (total - 1) * 100;
+  const reperes = [{ position: position(etat.donnees.jour), texte: "Aujourd'hui" }];
+  const deuxBaies = (etat.donnees.courses || []).find((c) => c.nom.indexOf("2 Baies") !== -1);
+  if (deuxBaies && deuxBaies.jour > debut && deuxBaies.jour < fin) reperes.push({ position: position(deuxBaies.jour), texte: "Trail des 2 Baies", bas: true });
+  reperes.push({ position: position(poids.date_cible), texte: nombre(poids.cible_kg) + " kg atteints" });
+  reperes.push({ position: 100, texte: "NTMF", bas: true });
+
+  const valeurs = mesure.concat(cible).filter((v) => v !== null);
+  const maxi = Math.max(...valeurs), mini = Math.min(...valeurs);
+  carte.appendChild(zoneGraphe([
+    { valeurs: cible, couleur: COULEURS.texte, epaisseur: 1.5, pointilles: "6 5" },
+    { valeurs: mesure, couleur: COULEURS.vert, epaisseur: 3 },
+  ], {
+    total: total,
+    reperes: reperes,
+    axe: [{ v: maxi, texte: nombre(maxi, 1) + " kg" }, { v: mini, texte: nombre(mini, 1) + " kg" }],
+    description: "Poids moyen sur 7 jours : " + kg(poids.moyenne_7j) + ". Cible : " + nombre(poids.cible_kg) + " kg le " + dateCourte(poids.date_cible) + ", puis stable jusqu'au NTMF.",
+  }));
+  const axeX = element("div", "axe-x");
+  axeX.appendChild(element("span", null, dateCourte(debut)));
+  axeX.appendChild(element("span", null, dateCourte(fin) + " " + jourDate(fin).getFullYear()));
+  carte.appendChild(axeX);
+  const legende = element("div", "legende-large");
+  const l1 = element("span"); l1.appendChild(element("span", "trait")); l1.appendChild(document.createTextNode("Poids mesuré (moyenne 7 jours)"));
+  const l2 = element("span"); l2.appendChild(element("span", "trait pointille")); l2.appendChild(document.createTextNode("Trajectoire cible"));
+  legende.appendChild(l1);
+  legende.appendChild(l2);
+  carte.appendChild(legende);
+
+  // Les quatre chiffres clés
+  const chiffres = element("dl", "chiffres-poids");
+  const ajouter = (nom, valeur, precision) => {
+    const bloc = element("div");
+    bloc.appendChild(element("dt", null, nom));
+    const dd = element("dd", null, valeur);
+    if (precision) { dd.appendChild(document.createTextNode(" ")); dd.appendChild(element("small", null, precision)); }
+    bloc.appendChild(dd);
+    chiffres.appendChild(bloc);
+  };
+  ajouter("Moyenne sur 7 jours", kg(poids.moyenne_7j), "dernière pesée " + dateCourte(poids.derniere.jour));
+  ajouter("Cible", nombre(poids.cible_kg) + " kg", "le " + dateCourte(poids.date_cible));
+  ajouter("Reste à perdre", poids.reste_kg !== null && poids.reste_kg <= 0 ? "Atteinte" : kg(poids.reste_kg));
+  ajouter("Rythme nécessaire", poids.rythme_necessaire_kg === null ? "–" : nombre(poids.rythme_necessaire_kg, 2) + " kg", poids.rythme_necessaire_pct === null ? "" : "par semaine, " + nombre(poids.rythme_necessaire_pct, 2) + " %");
+  carte.appendChild(chiffres);
+
+  // Les règles, appliquées à ta situation
+  const regles = element("ul", "regles-poids");
+  if (poids.rythme_actuel_kg !== null) {
+    const pct = poids.rythme_actuel_pct;
+    let texte = "Rythme actuel sur 4 semaines : " + (poids.rythme_actuel_kg >= 0 ? "−" : "+") + nombre(Math.abs(poids.rythme_actuel_kg), 2) + " kg par semaine (" + nombre(Math.abs(pct), 2) + " % du poids)";
+    texte += pct > poids.plafond_pct ? ", au-delà du plafond de " + nombre(poids.plafond_pct, 1) + " % : ralentis." : pct > 0 ? ", dans le plafond de " + nombre(poids.plafond_pct, 1) + " %." : ".";
+    regles.appendChild(element("li", null, texte));
+  } else {
+    regles.appendChild(element("li", null, "Rythme actuel : il faut au moins 2 semaines de pesées pour le calculer."));
+  }
+  if (poids.rythme_necessaire_pct !== null && poids.rythme_necessaire_pct > poids.plafond_pct) {
+    regles.appendChild(element("li", null, "Le rythme nécessaire dépasse le plafond de " + nombre(poids.plafond_pct, 1) + " % par semaine : mieux vaut décaler la cible que forcer le déficit."));
+  }
+  regles.appendChild(element("li", null, poids.en_affutage
+    ? "Affûtage en cours : aucun déficit jusqu'au NTMF, vise un poids stable."
+    : "Aucun déficit à partir du " + dateCourte(poids.debut_affutage) + " : les trois semaines avant le NTMF sont réservées à l'affûtage."));
+  carte.appendChild(regles);
+  return carte;
+}
+
+function carteRythmePoids(poids) {
+  const carte = element("article", "carte indicateur");
+  const tete = element("div", "tete");
+  tete.appendChild(element("h2", null, "Rythme de perte de poids"));
+  tete.appendChild(element("div", "source", "Withings"));
+  carte.appendChild(tete);
+  const grand = element("div", "grand");
+  const pct = poids ? poids.rythme_actuel_pct : null;
+  grand.appendChild(element("span", "valeur", pct === null ? "–" : nombre(Math.abs(pct), 2) + " %"));
+  if (pct !== null) grand.appendChild(element("span", "unite", pct >= 0 ? "de perte par semaine" : "de prise par semaine"));
+  carte.appendChild(grand);
+  let texte, classe = "neutre";
+  if (!poids) texte = "En attente de la première synchro Withings";
+  else if (pct === null) texte = "Il faut au moins 2 semaines de pesées";
+  else if (poids.en_affutage) { texte = "Affûtage : vise un poids stable"; classe = Math.abs(pct) <= 0.2 ? "favorable" : "surveiller"; }
+  else if (pct > poids.plafond_pct) { texte = "Au-delà du plafond de " + nombre(poids.plafond_pct, 1) + " % · à surveiller"; classe = "surveiller"; }
+  else if (pct > 0) { texte = "Dans le plafond de " + nombre(poids.plafond_pct, 1) + " % · favorable"; classe = "favorable"; }
+  else texte = "Poids stable ou en hausse sur 4 semaines";
+  carte.appendChild(element("div", "evolution " + classe, texte));
+  carte.appendChild(element("div", "aide", "Tendance sur 4 semaines. Plafond : " + nombre(poids ? poids.plafond_pct : 0.5, 1) + " % du poids par semaine, pour perdre du gras sans entamer la récupération."));
+  return carte;
+}
+
 // ---------- En-tête du PC ----------
 function afficherEntetePc() {
   const d = etat.donnees;
@@ -1660,6 +1808,9 @@ function afficherEntetePc() {
   }
   if (d.synchro && d.synchro.ok === false) {
     bandeaux.appendChild(bandeau("alerte", d.synchro.message + " Le verdict s'appuie sur les données déjà enregistrées."));
+  }
+  if (d.synchro && d.synchro.withings && d.synchro.withings.ok === false) {
+    bandeaux.appendChild(bandeau("alerte", d.synchro.withings.message));
   }
 }
 
@@ -2146,6 +2297,34 @@ document.addEventListener("visibilitychange", () => {
     chargerDonnees().catch(() => {});
   }
 });
+
+// Retour de l'autorisation Withings : on affiche le code à copier dans PowerShell
+(function codeWithings() {
+  const parametres = new URLSearchParams(window.location.search);
+  const code = parametres.get("code");
+  if (!code && !parametres.get("error")) return;
+  $("code-withings").hidden = false;
+  if (code) {
+    $("code-withings-valeur").textContent = code;
+    $("bouton-copier-code").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(code);
+        toast("Code copié : colle-le dans PowerShell.");
+      } catch (e) {
+        // Copie refusée par le navigateur : on sélectionne le code, il reste à faire Ctrl+C
+        const selection = window.getSelection();
+        const plage = document.createRange();
+        plage.selectNodeContents($("code-withings-valeur"));
+        selection.removeAllRanges();
+        selection.addRange(plage);
+        toast("Code sélectionné : fais Ctrl+C, puis colle-le dans PowerShell.");
+      }
+    });
+  } else {
+    $("code-withings-valeur").textContent = "Withings a refusé l'autorisation (" + parametres.get("error") + "). Relance python withings.py.";
+    $("bouton-copier-code").hidden = true;
+  }
+})();
 
 preparerSaisie();
 choisirPeriode(lirePeriode());
