@@ -181,6 +181,49 @@ nav.onglets button {
 }
 nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; }
 
+/* Graphiques (onglet Tendances) */
+.carte.graphe { display: flex; flex-direction: column; gap: 8px; }
+.titre-graphe { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.titre-graphe h2 { font-size: 14px; }
+.titre-graphe .periode { font-weight: 400; color: var(--discret); }
+.titre-graphe .derniere { font-size: 14px; font-weight: 600; white-space: nowrap; }
+.graphique { width: 100%; height: auto; display: block; }
+.note-graphe { font-size: 11px; color: var(--discret); line-height: 1.4; }
+.legende { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; }
+.legende > div { display: flex; align-items: center; gap: 6px; }
+.carte.pointillee { background: transparent; border: 1.5px dashed #9AA39C; display: flex; flex-direction: column; gap: 4px; }
+.vide { font-size: 13px; color: var(--discret); }
+
+/* Listes de séances (passées et prévues) */
+.liste-jours { padding-top: 4px; padding-bottom: 4px; }
+.ligne-jour {
+  display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 8px;
+  min-height: 44px; padding: 8px 0; border-bottom: 1px solid #E8EBE6;
+}
+.ligne-jour:last-child { border-bottom: none; }
+.ligne-jour .nom-jour { font-size: 12px; color: var(--discret); line-height: 1.3; }
+.ligne-jour.active .nom-jour { color: var(--texte); font-weight: 600; }
+.ligne-jour.aujourdhui .nom-jour { color: var(--vert); font-weight: 600; }
+.ligne-jour .repos { font-size: 13px; color: var(--discret); }
+.ligne-jour .quoi { font-size: 14px; font-weight: 600; }
+.ligne-jour .details { font-size: 12px; color: var(--discret); margin-top: 2px; }
+.ligne-jour .description { font-size: 12px; color: var(--texte); margin-top: 2px; }
+.ligne-jour .seance + .seance { margin-top: 8px; }
+.type { border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 600; background: var(--puce); white-space: nowrap; }
+.type.qualite { background: var(--vert); color: #FFFFFF; }
+.type.longue { background: var(--vert-clair); color: var(--vert-fonce); }
+
+/* Onglet Semaine */
+.tuiles.trois { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.garde-fou { border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.garde-fou.AVERTISSEMENT { background: var(--orange-clair); color: var(--orange-texte); }
+.garde-fou.BLOCAGE { background: var(--rouge-clair); color: #7A1A12; }
+.garde-fou .regle { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.garde-fou .message { font-size: 13px; line-height: 1.4; }
+.envoi { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.envoi.ok { color: var(--vert); }
+.envoi.bloque { color: var(--rouge); }
+
 /* Message flottant */
 .toast {
   position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 12px); transform: translateX(-50%);
@@ -213,7 +256,7 @@ nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; 
     <div id="aujourdhui-bandeaux"></div>
 
     <section class="verdict" id="verdict" aria-live="polite">
-      <div class="etiquette">Verdict du matin</div>
+      <div class="etiquette" id="verdict-etiquette">Verdict du matin</div>
       <div class="ligne">
         <div class="couleur" id="verdict-couleur">…</div>
         <div class="points" id="verdict-points"></div>
@@ -286,13 +329,17 @@ nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; 
   <!-- ================= Tendances ================= -->
   <section id="onglet-tendances" class="onglet" aria-labelledby="titre-tendances">
     <header class="entete"><div><div class="sur-titre">Santé et sport sur le même écran</div><h1 id="titre-tendances">Tendances</h1></div></header>
-    <div class="bandeau info">Les graphiques de VFC, de sommeil, de forme et de fatigue arrivent à l'étape 6d.</div>
+    <div id="contenu-tendances" style="display: flex; flex-direction: column; gap: 12px">
+      <div class="vide">Chargement…</div>
+    </div>
   </section>
 
   <!-- ================= Semaine ================= -->
   <section id="onglet-semaine" class="onglet" aria-labelledby="titre-semaine">
-    <header class="entete"><div><div class="sur-titre">Plan du coach et garde-fous</div><h1 id="titre-semaine">Semaine</h1></div></header>
-    <div class="bandeau info">Le plan de la semaine et le verdict des garde-fous arrivent à l'étape 6d.</div>
+    <header class="entete"><div><div class="sur-titre" id="semaine-periode">Plan du coach et garde-fous</div><h1 id="titre-semaine">Semaine</h1></div></header>
+    <div id="contenu-semaine" style="display: flex; flex-direction: column; gap: 12px">
+      <div class="vide">Chargement…</div>
+    </div>
   </section>
 
   <!-- ================= Réglages ================= -->
@@ -457,6 +504,8 @@ async function chargerDonnees() {
   etat.donnees = await reponse.json();
   afficherAujourdhui();
   preparerSaisie();
+  afficherTendances();
+  afficherSemaine();
   return etat.donnees;
 }
 
@@ -465,7 +514,9 @@ function afficherAujourdhui() {
   const d = etat.donnees;
   if (!d) return;
 
-  $("aujourdhui-date").textContent = dateLongue(d.jour) + " · mis à jour à " + (d.genere_le || "").slice(11, 16);
+  const heure = (d.genere_le || "").slice(11, 16);
+  $("aujourdhui-date").textContent = dateLongue(d.jour);
+  $("verdict-etiquette").textContent = "Verdict du matin" + (heure ? " · calculé à " + heure.replace(":", " h ") : "");
 
   // Bandeaux : données anciennes, synchro en échec
   const bandeaux = $("aujourdhui-bandeaux");
@@ -591,6 +642,394 @@ async function actualiser() {
     vider(bandeaux);
     bandeaux.appendChild(bandeau("erreur", e.message));
   }
+}
+
+// ---------- Outils de dates et de graphiques ----------
+const NS = "http://www.w3.org/2000/svg";
+const COULEURS = { vert: "#0B5D52", orange: "#C2560C", orangeBarre: "#E08A3C", texte: "#15211D", discret: "#55625C", bande: "#DCEBE7", bandeTexte: "#33514A", grille: "#DDE1DB", barreCharge: "#E3E8E2" };
+const POLICE = "Inter, system-ui, sans-serif";
+
+function decalerJour(jourIso, nombreJours) {
+  const d = new Date(jourIso + "T12:00:00");
+  d.setDate(d.getDate() + nombreJours);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+function capitaliser(texte) { return texte.charAt(0).toUpperCase() + texte.slice(1); }
+function jourDate(jourIso) { return new Date(jourIso + "T12:00:00"); }
+function initialeJour(jourIso) { return ["D", "L", "M", "M", "J", "V", "S"][jourDate(jourIso).getDay()]; }
+function jourAbrege(jourIso) { return capitaliser(jourDate(jourIso).toLocaleDateString("fr-FR", { weekday: "short" })); }
+function dateCourte(jourIso) { return jourDate(jourIso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }); }
+function moisLong(jourIso) { return jourDate(jourIso).toLocaleDateString("fr-FR", { month: "long" }); }
+function heuresCourtes(heures) {
+  const total = Math.round(heures * 60);
+  return Math.floor(total / 60) + "h" + String(total % 60).padStart(2, "0");
+}
+
+function dessin(balise, attributs, texte) {
+  const el = document.createElementNS(NS, balise);
+  for (const [nom, valeur] of Object.entries(attributs || {})) el.setAttribute(nom, String(valeur));
+  if (texte !== undefined && texte !== null) el.textContent = texte;
+  return el;
+}
+
+function texteGraphe(x, y, contenu, options) {
+  options = options || {};
+  return dessin("text", {
+    x: x, y: y, "font-size": options.taille || 10, fill: options.couleur || COULEURS.texte,
+    "text-anchor": options.ancre || "middle", "font-family": POLICE, "font-weight": options.gras ? 600 : 400,
+  }, contenu);
+}
+
+function cadreGraphe(largeur, hauteur, description) {
+  return dessin("svg", { viewBox: "0 0 " + largeur + " " + hauteur, class: "graphique", role: "img", "aria-label": description });
+}
+
+// Abscisse de la i-ème valeur sur n, avec une marge de chaque côté
+function abscisse(i, n, largeur, marge) {
+  return n <= 1 ? largeur / 2 : marge + i * (largeur - 2 * marge) / (n - 1);
+}
+
+function carteGraphe(titre, periode, derniere) {
+  const carte = element("section", "carte graphe");
+  const entete = element("div", "titre-graphe");
+  const h2 = element("h2", null, titre + " ");
+  h2.appendChild(element("span", "periode", "· " + periode));
+  entete.appendChild(h2);
+  if (derniere) entete.appendChild(element("div", "derniere", derniere));
+  carte.appendChild(entete);
+  return carte;
+}
+
+// ---------- Onglet Tendances ----------
+function afficherTendances() {
+  const d = etat.donnees;
+  const zone = $("contenu-tendances");
+  if (!d) return;
+  vider(zone);
+  const nuits = d.nuits || [];
+  zone.appendChild(carteVfc(nuits, d.normale_vfc));
+  zone.appendChild(carteSommeil(nuits));
+  zone.appendChild(carteCharge((d.charge || []).filter((jour) => jour.jour < d.jour), d.charge_reveil || {}));
+  zone.appendChild(carteSeancesRecentes(d.seances || []));
+
+  const withings = element("section", "carte pointillee");
+  withings.appendChild(element("h2", null, "Poids et composition corporelle"));
+  withings.appendChild(element("div", "aide", "La courbe de poids et de masse grasse arrivera avec la balance Withings."));
+  zone.appendChild(withings);
+}
+
+function carteVfc(nuits, normale) {
+  const valeurs = nuits.map((n) => n.vfc);
+  const mesurees = valeurs.filter((v) => v !== null && v !== undefined);
+  const derniere = valeurs[valeurs.length - 1];
+  const carte = carteGraphe("VFC nocturne", nuits.length + " nuits", derniere ? derniere + " ms" : null);
+  if (!mesurees.length) {
+    carte.appendChild(element("div", "vide", "Aucune VFC mesurée sur ces nuits."));
+    return carte;
+  }
+
+  const L = 326, H = 116, haut = 18, bas = 94, marge = 14;
+  const bornes = mesurees.concat(normale ? [normale.basse, normale.haute] : []);
+  const mini = Math.min(...bornes), maxi = Math.max(...bornes);
+  const ecart = Math.max(3, (maxi - mini) * 0.15);
+  const y = (v) => haut + (maxi + ecart - v) / (maxi - mini + 2 * ecart) * (bas - haut);
+  const x = (i) => abscisse(i, valeurs.length, L, marge);
+
+  let description = "VFC des " + nuits.length + " dernières nuits : " + valeurs.map((v) => (v === null || v === undefined ? "non mesurée" : v)).join(", ") + " millisecondes";
+  if (normale) description += ", pour une normale de " + normale.basse + " à " + normale.haute;
+  const svg = cadreGraphe(L, H, description);
+
+  if (normale) {
+    svg.appendChild(dessin("rect", { x: 0, y: y(normale.haute), width: L, height: y(normale.basse) - y(normale.haute), fill: COULEURS.bande }));
+  }
+
+  // Courbe, coupée là où une nuit manque
+  let segment = [];
+  const tracer = () => {
+    if (segment.length > 1) svg.appendChild(dessin("polyline", { points: segment.join(" "), fill: "none", stroke: COULEURS.vert, "stroke-width": 2.5, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+    segment = [];
+  };
+  valeurs.forEach((v, i) => { if (v === null || v === undefined) tracer(); else segment.push(x(i).toFixed(1) + "," + y(v).toFixed(1)); });
+  tracer();
+
+  valeurs.forEach((v, i) => {
+    if (v !== null && v !== undefined) {
+      const basse = normale && v < normale.basse;
+      const couleur = basse ? COULEURS.orange : COULEURS.vert;
+      const dernier = i === valeurs.length - 1;
+      svg.appendChild(dessin("circle", { cx: x(i), cy: y(v), r: dernier ? 4.5 : 3, fill: couleur, stroke: dernier ? "#FFFFFF" : "none", "stroke-width": 2 }));
+      svg.appendChild(texteGraphe(x(i), y(v) - 8, v, { couleur: basse ? COULEURS.orange : COULEURS.texte, gras: dernier }));
+    }
+    svg.appendChild(texteGraphe(x(i), H - 4, initialeJour(nuits[i].jour), { couleur: COULEURS.discret }));
+  });
+  carte.appendChild(svg);
+  carte.appendChild(element("div", "note-graphe", normale
+    ? "Bande verte : ta normale sur 28 nuits, de " + normale.basse + " à " + normale.haute + " ms. Un point orange signale une nuit sous ta normale."
+    : "Ta normale apparaîtra après 14 nuits mesurées."));
+  return carte;
+}
+
+function carteSommeil(nuits) {
+  const valeurs = nuits.map((n) => n.sommeil_h);
+  const derniere = valeurs[valeurs.length - 1];
+  const carte = carteGraphe("Sommeil", nuits.length + " nuits", derniere ? heuresMinutes(derniere) : null);
+  if (!valeurs.some((v) => v)) {
+    carte.appendChild(element("div", "vide", "Aucun sommeil enregistré sur ces nuits."));
+    return carte;
+  }
+
+  const L = 326, H = 116, haut = 16, bas = 96, marge = 14, largeurBarre = 26, SEUIL = 6;
+  const maxi = Math.max(9, ...valeurs.filter((v) => v));
+  const hauteur = (v) => v / maxi * (bas - haut);
+  const x = (i) => abscisse(i, valeurs.length, L, marge);
+  const courtes = valeurs.filter((v) => v && v < SEUIL).length;
+
+  const description = "Sommeil des " + nuits.length + " dernières nuits : " + valeurs.map((v) => (v ? heuresMinutes(v) : "non mesuré")).join(", ") + ". " + courtes + " nuit" + (courtes > 1 ? "s" : "") + " sous 6 heures.";
+  const svg = cadreGraphe(L, H, description);
+  let declarees = 0;
+
+  valeurs.forEach((v, i) => {
+    if (v) {
+      const courte = v < SEUIL;
+      const h = hauteur(v);
+      svg.appendChild(dessin("rect", { x: x(i) - largeurBarre / 2, y: bas - h, width: largeurBarre, height: h, rx: 3, fill: courte ? COULEURS.orangeBarre : COULEURS.vert }));
+      svg.appendChild(texteGraphe(x(i), bas - 6, heuresCourtes(v), { taille: 9, couleur: courte ? COULEURS.texte : "#FFFFFF" }));
+      if (nuits[i].sommeil_declare) {
+        declarees += 1;
+        svg.appendChild(dessin("circle", { cx: x(i), cy: bas - h - 7, r: 3, fill: COULEURS.texte }));
+      }
+    }
+    svg.appendChild(texteGraphe(x(i), H - 4, initialeJour(nuits[i].jour), { couleur: COULEURS.discret }));
+  });
+  const ySeuil = bas - hauteur(SEUIL);
+  svg.appendChild(dessin("line", { x1: 0, y1: ySeuil, x2: L, y2: ySeuil, stroke: COULEURS.texte, "stroke-width": 1, "stroke-dasharray": "3 4" }));
+  carte.appendChild(svg);
+
+  let note = "Pointillé : 6 h. En orange, les nuits plus courtes.";
+  if (declarees) note += " Point noir : durée que tu as corrigée dans la saisie.";
+  carte.appendChild(element("div", "note-graphe", note));
+  return carte;
+}
+
+function carteCharge(jours, reveil) {
+  const carte = element("section", "carte graphe");
+  const entete = element("div", "titre-graphe");
+  const h2 = element("h2", null, "Forme et fatigue ");
+  h2.appendChild(element("span", "periode", "· " + jours.length + " jours"));
+  entete.appendChild(h2);
+  carte.appendChild(entete);
+  if (jours.length < 2) {
+    carte.appendChild(element("div", "vide", "Pas encore assez d'historique."));
+    return carte;
+  }
+
+  // Légende avec les valeurs du réveil (les mêmes que sur l'onglet Aujourd'hui)
+  const legende = element("div", "legende");
+  const elementLegende = (trait, nom, valeur) => {
+    const bloc = element("div");
+    const echantillon = dessin("svg", { width: 22, height: 8, viewBox: "0 0 22 8", "aria-hidden": "true" });
+    echantillon.appendChild(trait);
+    bloc.appendChild(echantillon);
+    bloc.appendChild(document.createTextNode(nom + (valeur === undefined ? "" : " ")));
+    if (valeur !== undefined) bloc.appendChild(element("strong", null, nombre(valeur)));
+    return bloc;
+  };
+  legende.appendChild(elementLegende(dessin("line", { x1: 0, y1: 4, x2: 22, y2: 4, stroke: COULEURS.vert, "stroke-width": 2.5 }), "Forme", reveil.forme));
+  legende.appendChild(elementLegende(dessin("line", { x1: 0, y1: 4, x2: 22, y2: 4, stroke: COULEURS.orange, "stroke-width": 2.5, "stroke-dasharray": "5 3" }), "Fatigue", reveil.fatigue));
+  legende.appendChild(elementLegende(dessin("rect", { x: 5, y: 0, width: 12, height: 8, rx: 2, fill: COULEURS.barreCharge }), "Charge du jour"));
+  carte.appendChild(legende);
+
+  const L = 326, H = 120, haut = 18, bas = 100, marge = 10;
+  const maxi = Math.max(10, ...jours.map((j) => Math.max(j.forme || 0, j.fatigue || 0))) * 1.12;
+  const maxCharge = Math.max(1, ...jours.map((j) => j.charge || 0));
+  const y = (v) => bas - v / maxi * (bas - haut);
+  const x = (i) => abscisse(i, jours.length, L, marge);
+
+  const pic = jours.reduce((meilleur, j, i) => ((j.fatigue || 0) > (jours[meilleur].fatigue || 0) ? i : meilleur), 0);
+  const description = "Sur " + jours.length + " jours, la forme va de " + Math.min(...jours.map((j) => j.forme)) + " à " + Math.max(...jours.map((j) => j.forme))
+    + " et la fatigue de " + Math.min(...jours.map((j) => j.fatigue)) + " à " + Math.max(...jours.map((j) => j.fatigue))
+    + ", avec un pic de fatigue le " + dateCourte(jours[pic].jour) + ".";
+  const svg = cadreGraphe(L, H, description);
+
+  svg.appendChild(dessin("line", { x1: 0, y1: bas, x2: L, y2: bas, stroke: COULEURS.grille, "stroke-width": 1 }));
+  jours.forEach((j, i) => {
+    if (j.charge > 0) {
+      const h = j.charge / maxCharge * (bas - haut) * 0.4;
+      svg.appendChild(dessin("rect", { x: x(i) - 6, y: bas - h, width: 12, height: h, rx: 2, fill: COULEURS.barreCharge }));
+    }
+  });
+  const points = (cle) => jours.map((j, i) => x(i).toFixed(1) + "," + y(j[cle] || 0).toFixed(1)).join(" ");
+  svg.appendChild(dessin("polyline", { points: points("fatigue"), fill: "none", stroke: COULEURS.orange, "stroke-width": 2.5, "stroke-dasharray": "5 3", "stroke-linejoin": "round" }));
+  svg.appendChild(dessin("polyline", { points: points("forme"), fill: "none", stroke: COULEURS.vert, "stroke-width": 2.5, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+
+  const xPic = x(pic);
+  const ancre = xPic < 50 ? "start" : xPic > L - 50 ? "end" : "middle";
+  svg.appendChild(texteGraphe(xPic, Math.max(10, y(jours[pic].fatigue) - 7), "pic le " + dateCourte(jours[pic].jour), { ancre: ancre }));
+  svg.appendChild(texteGraphe(x(0), H - 4, dateCourte(jours[0].jour), { ancre: "start", couleur: COULEURS.discret }));
+  svg.appendChild(texteGraphe(x(jours.length - 1), H - 4, dateCourte(jours[jours.length - 1].jour), { ancre: "end", couleur: COULEURS.discret }));
+  carte.appendChild(svg);
+  carte.appendChild(element("div", "note-graphe", "Fatigue au-dessus de la forme : tu encaisses une charge récente. En dessous : tu es frais."));
+  return carte;
+}
+
+function carteSeancesRecentes(seances) {
+  const carte = carteGraphe("Séances", "14 derniers jours");
+  carte.classList.add("liste-jours");
+  carte.style.gap = "0";
+  if (!seances.length) {
+    carte.appendChild(element("div", "vide", "Aucune séance sur cette période."));
+    return carte;
+  }
+  for (const s of seances.slice().reverse()) {
+    const ligne = element("div", "ligne-jour active");
+    ligne.appendChild(element("div", "nom-jour", jourAbrege(s.jour) + " " + jourDate(s.jour).getDate()));
+    const bloc = element("div");
+    bloc.appendChild(element("div", "quoi", s.nom || capitaliser(s.sport || "séance")));
+    const details = [];
+    if (s.distance_km) details.push(nombre(s.distance_km, 1) + " km");
+    if (s.duree_min) details.push(s.duree_min + " min");
+    if (s.denivele_m) details.push(s.denivele_m + " m D+");
+    if (s.fc_moy) details.push("FC " + s.fc_moy);
+    if (s.charge !== null && s.charge !== undefined) details.push("charge " + s.charge);
+    bloc.appendChild(element("div", "details", details.join(" · ")));
+    ligne.appendChild(bloc);
+    ligne.appendChild(element("div"));
+    carte.appendChild(ligne);
+  }
+  return carte;
+}
+
+// ---------- Onglet Semaine ----------
+const SPORTS = { course: "Course", velo: "Vélo", renfo: "Renforcement" };
+const TYPES = { facile: ["endurance", "Facile"], qualite: ["qualité", "Qualité"], longue: ["sortie longue", "Longue"] };
+const REGLES = {
+  R1: "charge aiguë sur chronique (ACWR)",
+  R2: "hausse du volume de course",
+  R3: "monotonie de la semaine",
+  R4: "qualité après un verdict rouge",
+  R5: "part de la sortie longue",
+  R6: "deux séances de qualité de suite",
+  R7: "course du samedi limitée à 50 min",
+  R8: "jour de course inhabituel",
+  R9: "vélo et course le même jour",
+};
+
+function periodeSemaine(debut) {
+  const fin = decalerJour(debut, 6);
+  const jourDebut = jourDate(debut).getDate(), jourFin = jourDate(fin).getDate();
+  if (moisLong(debut) === moisLong(fin)) return "Du " + jourDebut + " au " + jourFin + " " + moisLong(fin);
+  return "Du " + jourDebut + " " + moisLong(debut) + " au " + jourFin + " " + moisLong(fin);
+}
+
+function iconeAlerte() {
+  const svg = dessin("svg", { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": 2.2, "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" });
+  svg.appendChild(dessin("path", { d: "M12 4l9 16H3z" }));
+  svg.appendChild(dessin("path", { d: "M12 10v4" }));
+  svg.appendChild(dessin("path", { d: "M12 17.5v.5" }));
+  return svg;
+}
+
+function afficherSemaine() {
+  const d = etat.donnees;
+  const zone = $("contenu-semaine");
+  if (!d) return;
+  vider(zone);
+  const s = d.semaine;
+
+  if (!s) {
+    $("semaine-periode").textContent = "Plan du coach et garde-fous";
+    zone.appendChild(bandeau("info", "Pas encore de plan pour cette semaine. Demande-le à ton coach, puis enregistre-le dans plan_semaine.json."));
+    return;
+  }
+  $("semaine-periode").textContent = periodeSemaine(s.semaine_du) + " · plan du coach";
+
+  if (s.erreurs) {
+    const carte = bandeau("erreur", "Le plan du coach n'a pas pu être lu :");
+    const liste = element("ul");
+    liste.style.margin = "6px 0 0";
+    liste.style.paddingLeft = "18px";
+    for (const erreur of s.erreurs) liste.appendChild(element("li", null, erreur));
+    carte.appendChild(liste);
+    zone.appendChild(carte);
+    return;
+  }
+
+  if (decalerJour(s.semaine_du, 6) < d.jour) {
+    zone.appendChild(bandeau("info", "Ce plan est terminé. Demande la semaine suivante à ton coach."));
+  }
+  if (s.course_semaine) {
+    const nom = typeof s.course_semaine === "string" ? s.course_semaine : (s.course_semaine.nom || "");
+    zone.appendChild(bandeau("ok", "Semaine de course" + (nom ? " (" + nom + ")" : "") + " : les garde-fous de volume (R1, R2, R3 et R5) sont suspendus."));
+  }
+
+  // Projection
+  const tuiles = element("section", "tuiles trois");
+  tuiles.setAttribute("aria-label", "Projection de la semaine");
+  for (const [nom, valeur] of [["Course prévue", nombre(s.minutes_course) + " min"], ["ACWR maximum", nombre(s.acwr_max, 2)], ["Monotonie", nombre(s.monotonie, 2)]]) {
+    const tuile = element("div", "tuile");
+    tuile.appendChild(element("div", "valeur", valeur));
+    tuile.appendChild(element("div", "nom", nom));
+    tuiles.appendChild(tuile);
+  }
+  zone.appendChild(tuiles);
+
+  // Alertes des garde-fous, les blocages d'abord
+  const alertes = (s.alertes || []).slice().sort((a, b) => (a.niveau === "BLOCAGE" ? 0 : 1) - (b.niveau === "BLOCAGE" ? 0 : 1));
+  for (const alerte of alertes) {
+    const carte = element("section", "garde-fou " + alerte.niveau);
+    const titre = element("div", "regle");
+    titre.appendChild(iconeAlerte());
+    const niveau = alerte.niveau === "BLOCAGE" ? "Blocage" : "Avertissement";
+    titre.appendChild(document.createTextNode(niveau + " · " + alerte.regle + (REGLES[alerte.regle] ? " · " + REGLES[alerte.regle] : "")));
+    carte.appendChild(titre);
+    carte.appendChild(element("div", "message", alerte.message));
+    zone.appendChild(carte);
+  }
+
+  // Le plan, jour par jour
+  const plan = element("section", "carte liste-jours");
+  plan.setAttribute("aria-label", "Plan jour par jour");
+  for (let i = 0; i < 7; i += 1) {
+    const jour = decalerJour(s.semaine_du, i);
+    const seances = (s.seances || []).filter((seance) => seance.jour === jour);
+    const ligne = element("div", "ligne-jour" + (seances.length ? " active" : "") + (jour === d.jour ? " aujourdhui" : ""));
+    ligne.appendChild(element("div", "nom-jour", jourAbrege(jour) + " " + jourDate(jour).getDate()));
+    if (!seances.length) {
+      ligne.appendChild(element("div", "repos", "Repos"));
+      ligne.appendChild(element("div"));
+    } else {
+      const bloc = element("div");
+      const types = element("div");
+      types.style.display = "flex";
+      types.style.flexDirection = "column";
+      types.style.gap = "8px";
+      types.style.alignItems = "flex-end";
+      for (const seance of seances) {
+        const unite = element("div", "seance");
+        const type = TYPES[seance.type] || [seance.type, seance.type];
+        unite.appendChild(element("div", "quoi", (SPORTS[seance.sport] || seance.sport) + (seance.sport === "renfo" ? "" : " · " + type[0])));
+        unite.appendChild(element("div", "details", seance.duree_min + " min · intensité " + seance.intensite + " · charge " + nombre(seance.charge)));
+        if (seance.description && seance.description.toLowerCase() !== type[0].toLowerCase()) unite.appendChild(element("div", "description", seance.description));
+        bloc.appendChild(unite);
+        types.appendChild(element("div", "type " + (seance.type || ""), seance.sport === "renfo" ? "Renfo" : type[1]));
+      }
+      ligne.appendChild(bloc);
+      ligne.appendChild(types);
+    }
+    plan.appendChild(ligne);
+  }
+  zone.appendChild(plan);
+
+  // Peut-on l'envoyer sur la montre ?
+  const envoi = element("div", "envoi " + (s.envoyable ? "ok" : "bloque"));
+  const icone = dessin("svg", { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": 2.4, "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" });
+  icone.appendChild(dessin("path", { d: s.envoyable ? "M5 12.5l4.5 4.5L19 7.5" : "M6 6l12 12M18 6L6 18" }));
+  envoi.appendChild(icone);
+  envoi.appendChild(document.createTextNode(s.envoyable
+    ? (alertes.length ? "Aucun blocage : semaine envoyable sur la montre" : "Aucune alerte : semaine envoyable sur la montre")
+    : "Blocage : à corriger avec ton coach avant de l'envoyer sur la montre"));
+  zone.appendChild(envoi);
 }
 
 // ---------- Onglet Saisie ----------
