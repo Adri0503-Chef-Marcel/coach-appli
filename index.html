@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B5D52">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Coach">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Coach</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icone-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icone-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<!--
+  Appli Coach : la page installée sur le téléphone.
+  Elle ne contient aucune donnée : elle lit donnees.json sur la branche "donnees"
+  du dépôt privé coach-sportif, et déclenche le workflow "Matin", grâce à une clé
+  d'accès GitHub enregistrée uniquement dans ce téléphone.
+-->
+<style>
+:root {
+  --fond: #F3F4F1;
+  --carte: #FFFFFF;
+  --texte: #15211D;
+  --discret: #55625C;
+  --bordure: #DDE1DB;
+  --champ: #C9CFC8;
+  --vert: #0B5D52;
+  --vert-fonce: #083F38;
+  --vert-clair: #DCEBE7;
+  --orange: #B45309;
+  --orange-clair: #FCEBDD;
+  --orange-texte: #6E2D04;
+  --rouge: #B42318;
+  --rouge-clair: #FDE7E5;
+  --puce: #E3E8E2;
+  --titre: "Space Grotesk", Inter, system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--fond); }
+body {
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  color: var(--texte);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+[hidden] { display: none !important; }
+button, input, textarea { font: inherit; color: inherit; }
+
+.appli { display: flex; flex-direction: column; height: 100%; max-width: 560px; margin: 0 auto; }
+main {
+  flex: 1; min-height: 0; overflow-y: auto;
+  padding: calc(env(safe-area-inset-top) + 20px) 16px 20px;
+}
+.onglet { display: flex; flex-direction: column; gap: 12px; }
+
+/* En-tête */
+.entete { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.entete .sur-titre { font-size: 13px; color: var(--discret); }
+h1 { margin: 2px 0 0; font-family: var(--titre); font-size: 28px; font-weight: 700; }
+h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.boutons-entete { display: flex; gap: 4px; }
+.bouton-icone {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  border: none; background: transparent; border-radius: 12px; color: var(--discret); cursor: pointer;
+}
+.bouton-icone:active { background: var(--puce); }
+
+/* Cartes */
+.carte { background: var(--carte); border-radius: 16px; padding: 14px 16px; }
+.carte h2.petit { font-size: 13px; color: var(--discret); margin-bottom: 4px; }
+
+/* Bandeaux d'information */
+.bandeau { border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.45; }
+.bandeau.info { background: var(--puce); color: var(--texte); }
+.bandeau.alerte { background: var(--orange-clair); color: var(--orange-texte); }
+.bandeau.erreur { background: var(--rouge-clair); color: #7A1A12; }
+.bandeau.ok { background: var(--vert-clair); color: var(--vert-fonce); }
+.bandeau a { color: inherit; font-weight: 600; }
+
+/* Verdict */
+.verdict { border-radius: 16px; padding: 18px; color: #FFFFFF; display: flex; flex-direction: column; gap: 6px; background: var(--discret); }
+.verdict.VERT { background: var(--vert); }
+.verdict.ORANGE { background: var(--orange); }
+.verdict.ROUGE { background: var(--rouge); }
+.verdict .etiquette { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+.verdict .ligne { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.verdict .couleur { font-family: var(--titre); font-size: 40px; font-weight: 700; line-height: 1; }
+.verdict .points { font-size: 13px; opacity: 0.9; }
+.verdict .conseil { font-size: 15px; line-height: 1.4; }
+
+/* Signaux */
+.signal { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; padding: 8px 0; border-top: 1px solid #EEF0EC; }
+.signal:first-of-type { border-top: none; }
+.signal .constat { font-size: 14px; line-height: 1.35; }
+.signal .conclusion { font-size: 12px; margin-top: 2px; }
+.signal .conclusion.p0 { color: var(--vert); }
+.signal .conclusion.p1 { color: var(--orange); }
+.signal .conclusion.p2 { color: var(--rouge); }
+
+/* Tuiles de chiffres */
+.tuiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.tuile { background: var(--carte); border-radius: 12px; padding: 10px 6px; text-align: center; }
+.tuile .valeur { font-family: var(--titre); font-size: 22px; font-weight: 700; }
+.tuile .nom { font-size: 11px; color: var(--discret); }
+
+/* Puces des courses */
+.puces { display: flex; flex-wrap: wrap; gap: 8px; }
+.puce { background: var(--puce); border-radius: 999px; padding: 6px 12px; font-size: 12px; }
+
+/* Boutons */
+.bouton {
+  min-height: 48px; border-radius: 12px; border: 1.5px solid var(--vert); background: transparent;
+  color: var(--vert); font-size: 15px; font-weight: 600; cursor: pointer; padding: 0 16px;
+}
+.bouton.principal { min-height: 56px; border: none; background: var(--vert); color: #FFFFFF; font-size: 17px; border-radius: 14px; }
+.bouton.discret { border-color: var(--champ); color: var(--texte); }
+.bouton:disabled { opacity: 0.55; cursor: default; }
+
+/* Saisie */
+.formes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.forme {
+  min-height: 52px; border-radius: 12px; border: 1.5px solid var(--champ); background: var(--carte);
+  font-family: var(--titre); font-size: 20px; font-weight: 700; cursor: pointer;
+}
+.forme[aria-pressed="true"] { background: var(--vert); border-color: var(--vert); color: #FFFFFF; }
+.repere { display: flex; justify-content: space-between; font-size: 12px; color: var(--discret); }
+.aide { font-size: 13px; color: var(--discret); line-height: 1.4; }
+.case { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; cursor: pointer; }
+.case input { width: 22px; height: 22px; accent-color: var(--vert); }
+.duree { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.champ { display: flex; flex-direction: column; gap: 4px; }
+.champ label { font-size: 12px; color: var(--discret); }
+input[type="number"], input[type="password"], textarea {
+  width: 100%; min-height: 48px; border-radius: 12px; border: 1.5px solid var(--champ);
+  padding: 10px 12px; font-size: 16px; background: var(--carte);
+}
+textarea { resize: none; }
+input:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--vert); outline-offset: 2px; }
+
+/* Barre d'onglets */
+nav.onglets {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: var(--carte); border-top: 1px solid var(--bordure);
+  padding: 6px 4px calc(env(safe-area-inset-bottom) + 8px);
+}
+nav.onglets button {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0; min-height: 44px;
+  border: none; background: transparent; font-size: 11px; color: var(--discret); cursor: pointer;
+}
+nav.onglets button[aria-current="page"] { color: var(--vert); font-weight: 600; }
+
+/* Message flottant */
+.toast {
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 12px); transform: translateX(-50%);
+  background: var(--texte); color: #FFFFFF; padding: 10px 16px; border-radius: 12px; font-size: 14px;
+  max-width: calc(100% - 32px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+</style>
+</head>
+<body>
+<div class="appli">
+<main>
+
+  <!-- ================= Aujourd'hui ================= -->
+  <section id="onglet-aujourdhui" class="onglet" aria-labelledby="titre-aujourdhui">
+    <header class="entete">
+      <div>
+        <div class="sur-titre" id="aujourdhui-date">Chargement…</div>
+        <h1 id="titre-aujourdhui">Aujourd'hui</h1>
+      </div>
+      <div class="boutons-entete">
+        <button type="button" class="bouton-icone" id="bouton-actualiser" aria-label="Actualiser les données">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>
+        </button>
+        <button type="button" class="bouton-icone" data-aller="reglages" aria-label="Réglages">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="aujourdhui-bandeaux"></div>
+
+    <section class="verdict" id="verdict" aria-live="polite">
+      <div class="etiquette">Verdict du matin</div>
+      <div class="ligne">
+        <div class="couleur" id="verdict-couleur">…</div>
+        <div class="points" id="verdict-points"></div>
+      </div>
+      <div class="conseil" id="verdict-conseil"></div>
+    </section>
+
+    <section class="carte" id="carte-signaux" hidden>
+      <h2 class="petit">Pourquoi ce verdict</h2>
+      <div id="liste-signaux"></div>
+    </section>
+
+    <section class="tuiles" id="tuiles-charge" aria-label="Charge au réveil" hidden></section>
+
+    <section class="puces" id="puces-courses" aria-label="Prochaines courses"></section>
+
+    <button type="button" class="bouton" id="bouton-copier" disabled>Copier le rapport pour mon coach</button>
+  </section>
+
+  <!-- ================= Saisie ================= -->
+  <section id="onglet-saisie" class="onglet" aria-labelledby="titre-saisie" hidden>
+    <header class="entete">
+      <div>
+        <div class="sur-titre" id="saisie-date"></div>
+        <h1 id="titre-saisie">Saisie du matin</h1>
+      </div>
+    </header>
+
+    <section class="carte" style="display: flex; flex-direction: column; gap: 10px">
+      <h2>Ta forme ce matin</h2>
+      <div class="formes" role="group" aria-label="Forme de 1 à 5" id="formes">
+        <button type="button" class="forme" data-forme="1" aria-pressed="false">1</button>
+        <button type="button" class="forme" data-forme="2" aria-pressed="false">2</button>
+        <button type="button" class="forme" data-forme="3" aria-pressed="false">3</button>
+        <button type="button" class="forme" data-forme="4" aria-pressed="false">4</button>
+        <button type="button" class="forme" data-forme="5" aria-pressed="false">5</button>
+      </div>
+      <div class="repere"><span>1 · épuisé</span><span>5 · excellente</span></div>
+    </section>
+
+    <section class="carte" style="display: flex; flex-direction: column; gap: 6px">
+      <h2>Ton sommeil</h2>
+      <div class="aide" id="sommeil-montre">La montre mesure ton sommeil automatiquement.</div>
+      <label class="case">
+        <input type="checkbox" id="corriger-sommeil">
+        La montre s'est trompée, je corrige
+      </label>
+      <div class="duree" id="bloc-duree" hidden>
+        <div class="champ">
+          <label for="sommeil-heures">Heures</label>
+          <input id="sommeil-heures" type="number" inputmode="numeric" min="0" max="14" value="7">
+        </div>
+        <div class="champ">
+          <label for="sommeil-minutes">Minutes</label>
+          <input id="sommeil-minutes" type="number" inputmode="numeric" min="0" max="59" value="0">
+        </div>
+      </div>
+    </section>
+
+    <section class="carte" style="display: flex; flex-direction: column; gap: 8px">
+      <label for="note"><h2>Une note pour le coach <span style="font-weight: 400; color: var(--discret)">(facultatif)</span></h2></label>
+      <textarea id="note" rows="2" maxlength="300" placeholder="Jambes lourdes, nuit hachée, douleur…"></textarea>
+    </section>
+
+    <button type="button" class="bouton principal" id="bouton-lancer">Lancer ma matinée</button>
+    <div id="saisie-statut" role="status" aria-live="polite"></div>
+    <div class="aide" style="text-align: center">Synchro Garmin, verdict et rapport : une à deux minutes. Sans saisie de ta part, la synchro part seule à 10 h.</div>
+  </section>
+
+  <!-- ================= Tendances ================= -->
+  <section id="onglet-tendances" class="onglet" aria-labelledby="titre-tendances" hidden>
+    <header class="entete"><div><div class="sur-titre">Santé et sport sur le même écran</div><h1 id="titre-tendances">Tendances</h1></div></header>
+    <div class="bandeau info">Les graphiques de VFC, de sommeil, de forme et de fatigue arrivent à l'étape 6d.</div>
+  </section>
+
+  <!-- ================= Semaine ================= -->
+  <section id="onglet-semaine" class="onglet" aria-labelledby="titre-semaine" hidden>
+    <header class="entete"><div><div class="sur-titre">Plan du coach et garde-fous</div><h1 id="titre-semaine">Semaine</h1></div></header>
+    <div class="bandeau info">Le plan de la semaine et le verdict des garde-fous arrivent à l'étape 6d.</div>
+  </section>
+
+  <!-- ================= Réglages ================= -->
+  <section id="onglet-reglages" class="onglet" aria-labelledby="titre-reglages" hidden>
+    <header class="entete"><div><div class="sur-titre">Connexion à ton dépôt GitHub</div><h1 id="titre-reglages">Réglages</h1></div></header>
+    <section class="carte" style="display: flex; flex-direction: column; gap: 10px">
+      <h2>Clé d'accès GitHub</h2>
+      <div class="aide">Elle permet à l'appli de lire tes données et de lancer ta matinée. Elle reste enregistrée dans ce téléphone uniquement.</div>
+      <div class="champ">
+        <label for="champ-jeton">Clé (commence par github_pat_)</label>
+        <input id="champ-jeton" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </div>
+      <button type="button" class="bouton principal" id="bouton-enregistrer-jeton">Enregistrer et tester</button>
+      <button type="button" class="bouton discret" id="bouton-oublier-jeton">Oublier la clé de ce téléphone</button>
+      <div id="reglages-statut" role="status" aria-live="polite"></div>
+    </section>
+  </section>
+
+</main>
+
+<nav class="onglets" aria-label="Onglets">
+  <button type="button" data-onglet="aujourdhui">
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l3 3 5-6"></path></svg>
+    Aujourd'hui
+  </button>
+  <button type="button" data-onglet="saisie">
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg>
+    Saisie
+  </button>
+  <button type="button" data-onglet="tendances">
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"></path><path d="M5 15l4-5 4 3 6-8"></path></svg>
+    Tendances
+  </button>
+  <button type="button" data-onglet="semaine">
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16"></path><path d="M9 3v4"></path><path d="M15 3v4"></path></svg>
+    Semaine
+  </button>
+</nav>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+"use strict";
+
+// ---------- Réglages fixes ----------
+const PROPRIETAIRE = "Adri0503-Chef-Marcel";
+const DEPOT = "coach-sportif";
+const WORKFLOW = "matin.yml";
+const API = "https://api.github.com/repos/" + PROPRIETAIRE + "/" + DEPOT;
+const CLE_STOCKAGE = "coach-jeton";
+const ATTENTE_MAX_MS = 6 * 60 * 1000;   // on suit la routine 6 minutes au plus
+const INTERVALLE_MS = 5000;             // une vérification toutes les 5 secondes
+
+const etat = { donnees: null, forme: null, enCours: false, jetonMemoire: "" };
+
+// ---------- Outils ----------
+const $ = (id) => document.getElementById(id);
+
+function element(balise, classe, texte) {
+  const el = document.createElement(balise);
+  if (classe) el.className = classe;
+  if (texte !== undefined && texte !== null) el.textContent = texte;
+  return el;
+}
+
+function vider(el) { while (el.firstChild) el.removeChild(el.firstChild); }
+
+function aujourdhuiLocal() {
+  const d = new Date();
+  const mois = String(d.getMonth() + 1).padStart(2, "0");
+  const jour = String(d.getDate()).padStart(2, "0");
+  return d.getFullYear() + "-" + mois + "-" + jour;
+}
+
+function dateLongue(jourIso) {
+  const texte = new Date(jourIso + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  return texte.charAt(0).toUpperCase() + texte.slice(1);
+}
+
+function heuresMinutes(heures) {
+  const total = Math.round(heures * 60);
+  return Math.floor(total / 60) + " h " + String(total % 60).padStart(2, "0");
+}
+
+function nombre(valeur, decimales) {
+  if (valeur === null || valeur === undefined) return "–";
+  return Number(valeur).toLocaleString("fr-FR", { minimumFractionDigits: decimales || 0, maximumFractionDigits: decimales || 0 });
+}
+
+let minuteurToast = null;
+function toast(message) {
+  const el = $("toast");
+  el.textContent = message;
+  el.hidden = false;
+  clearTimeout(minuteurToast);
+  minuteurToast = setTimeout(() => { el.hidden = true; }, 3500);
+}
+
+function bandeau(type, texte, lien) {
+  const el = element("div", "bandeau " + type, texte);
+  if (lien) {
+    el.appendChild(document.createTextNode(" "));
+    const a = element("a", null, lien.texte);
+    a.href = lien.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    el.appendChild(a);
+  }
+  return el;
+}
+
+// ---------- Clé d'accès, enregistrée dans ce téléphone uniquement ----------
+function lireJeton() {
+  try { return localStorage.getItem(CLE_STOCKAGE) || etat.jetonMemoire; } catch (e) { return etat.jetonMemoire; }
+}
+
+function ecrireJeton(jeton) {
+  etat.jetonMemoire = jeton;
+  try {
+    if (jeton) localStorage.setItem(CLE_STOCKAGE, jeton); else localStorage.removeItem(CLE_STOCKAGE);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// ---------- Dialogue avec GitHub ----------
+function messageErreur(statut) {
+  if (statut === 401) return "Clé d'accès refusée : elle est peut-être expirée. Remplace-la dans Réglages.";
+  if (statut === 403) return "La clé n'a pas les bons droits : il faut Actions en lecture et écriture, et Contents en lecture.";
+  if (statut === 404) return "Introuvable : vérifie que la clé donne bien accès au dépôt coach-sportif.";
+  return "GitHub a répondu une erreur " + statut + ". Réessaie dans un instant.";
+}
+
+async function appelGitHub(chemin, options) {
+  options = options || {};
+  const entetes = { Authorization: "Bearer " + lireJeton(), Accept: options.accept || "application/vnd.github+json" };
+  if (options.corps) entetes["Content-Type"] = "application/json";
+  let reponse;
+  try {
+    reponse = await fetch(API + chemin, {
+      method: options.methode || "GET",
+      headers: entetes,
+      body: options.corps ? JSON.stringify(options.corps) : undefined,
+      cache: "no-store",
+    });
+  } catch (e) {
+    throw new Error("Impossible de joindre GitHub : vérifie ta connexion internet.");
+  }
+  if (!reponse.ok) {
+    const erreur = new Error(messageErreur(reponse.status));
+    erreur.statut = reponse.status;
+    throw erreur;
+  }
+  return reponse;
+}
+
+async function chargerDonnees() {
+  const reponse = await appelGitHub("/contents/donnees.json?ref=donnees", { accept: "application/vnd.github.raw+json" });
+  etat.donnees = await reponse.json();
+  afficherAujourdhui();
+  preparerSaisie();
+  return etat.donnees;
+}
+
+// ---------- Onglet Aujourd'hui ----------
+function afficherAujourdhui() {
+  const d = etat.donnees;
+  if (!d) return;
+
+  $("aujourdhui-date").textContent = dateLongue(d.jour) + " · mis à jour à " + (d.genere_le || "").slice(11, 16);
+
+  // Bandeaux : données anciennes, synchro en échec
+  const bandeaux = $("aujourdhui-bandeaux");
+  vider(bandeaux);
+  if (d.jour !== aujourdhuiLocal()) {
+    bandeaux.appendChild(bandeau("info", "Ces données datent du " + dateLongue(d.jour).toLowerCase() + ". Lance ta matinée depuis l'onglet Saisie pour les mettre à jour."));
+  }
+  if (d.synchro && d.synchro.ok === false) {
+    bandeaux.appendChild(bandeau("alerte", d.synchro.message + " Le verdict s'appuie sur les données déjà enregistrées."));
+  }
+
+  // Verdict
+  const carte = $("verdict");
+  const v = d.verdict;
+  carte.className = "verdict " + (v ? v.couleur : "");
+  if (v) {
+    $("verdict-couleur").textContent = v.couleur.charAt(0) + v.couleur.slice(1).toLowerCase();
+    $("verdict-points").textContent = v.points === 0 ? "0 point de vigilance" : v.points + " point" + (v.points > 1 ? "s" : "") + " de vigilance";
+    $("verdict-conseil").textContent = v.conseil;
+  } else {
+    $("verdict-couleur").textContent = "En attente";
+    $("verdict-points").textContent = "";
+    $("verdict-conseil").textContent = "La nuit de ce matin n'est pas encore synchronisée : la montre n'a peut-être pas encore envoyé ses données à Garmin.";
+  }
+
+  // Signaux
+  const liste = $("liste-signaux");
+  vider(liste);
+  $("carte-signaux").hidden = !v;
+  if (v) {
+    for (const signal of v.signaux) {
+      const morceaux = signal.texte.split(" -> ");
+      const ligne = element("div", "signal");
+      ligne.appendChild(iconeSignal(signal.points));
+      const bloc = element("div");
+      bloc.appendChild(element("div", "constat", morceaux[0]));
+      if (morceaux[1]) bloc.appendChild(element("div", "conclusion p" + signal.points, morceaux[1]));
+      ligne.appendChild(bloc);
+      liste.appendChild(ligne);
+    }
+  }
+
+  // Charge au réveil
+  const tuiles = $("tuiles-charge");
+  vider(tuiles);
+  const c = d.charge_reveil || {};
+  const valeurs = [["Forme", nombre(c.forme)], ["Fatigue", nombre(c.fatigue)], ["Fraîcheur", nombre(c.fraicheur)], ["Readiness", nombre(c.readiness)]];
+  for (const [nom, valeur] of valeurs) {
+    const tuile = element("div", "tuile");
+    tuile.appendChild(element("div", "valeur", valeur));
+    tuile.appendChild(element("div", "nom", nom));
+    tuiles.appendChild(tuile);
+  }
+  tuiles.hidden = false;
+
+  // Courses
+  const puces = $("puces-courses");
+  vider(puces);
+  for (const course of d.courses || []) {
+    const puce = element("div", "puce", course.nom + " · ");
+    puce.appendChild(element("strong", null, course.dans_jours === 0 ? "aujourd'hui" : "J-" + course.dans_jours));
+    puces.appendChild(puce);
+  }
+
+  $("bouton-copier").disabled = !d.rapport;
+}
+
+function iconeSignal(points) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("width", "18");
+  svg.setAttribute("height", "18");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  svg.style.marginTop = "1px";
+  const couleurs = ["#0B5D52", "#B45309", "#B42318"];
+  const couleur = couleurs[Math.min(points, 2)];
+  if (points === 0) {
+    const chemin = document.createElementNS(ns, "path");
+    chemin.setAttribute("d", "M5 12.5l4.5 4.5L19 7.5");
+    chemin.setAttribute("fill", "none");
+    chemin.setAttribute("stroke", couleur);
+    chemin.setAttribute("stroke-width", "2.6");
+    chemin.setAttribute("stroke-linecap", "round");
+    chemin.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(chemin);
+  } else {
+    const rond = document.createElementNS(ns, "circle");
+    rond.setAttribute("cx", "12");
+    rond.setAttribute("cy", "12");
+    rond.setAttribute("r", points >= 2 ? "8" : "6");
+    rond.setAttribute("fill", couleur);
+    svg.appendChild(rond);
+  }
+  return svg;
+}
+
+async function copierRapport() {
+  const texte = etat.donnees && etat.donnees.rapport;
+  if (!texte) return;
+  try {
+    await navigator.clipboard.writeText(texte);
+  } catch (e) {
+    const zone = element("textarea");
+    zone.value = texte;
+    zone.style.position = "fixed";
+    zone.style.opacity = "0";
+    document.body.appendChild(zone);
+    zone.select();
+    document.execCommand("copy");
+    document.body.removeChild(zone);
+  }
+  toast("Rapport copié : colle-le dans ton projet coach.");
+}
+
+async function actualiser() {
+  if (!lireJeton()) { afficherOnglet("reglages"); return; }
+  try {
+    await chargerDonnees();
+    toast("Données à jour.");
+  } catch (e) {
+    const bandeaux = $("aujourdhui-bandeaux");
+    vider(bandeaux);
+    bandeaux.appendChild(bandeau("erreur", e.message));
+  }
+}
+
+// ---------- Onglet Saisie ----------
+function preparerSaisie() {
+  $("saisie-date").textContent = dateLongue(aujourdhuiLocal());
+  const d = etat.donnees;
+  const nuit = d && (d.nuits || []).find((n) => n.jour === aujourdhuiLocal());
+  if (nuit && nuit.sommeil_montre_h) {
+    $("sommeil-montre").textContent = "La montre a mesuré " + heuresMinutes(nuit.sommeil_montre_h) + " cette nuit.";
+    if (!$("corriger-sommeil").checked) {
+      const total = Math.round(nuit.sommeil_montre_h * 60);
+      $("sommeil-heures").value = Math.floor(total / 60);
+      $("sommeil-minutes").value = total % 60;
+    }
+  }
+}
+
+function choisirForme(valeur) {
+  etat.forme = etat.forme === valeur ? null : valeur;
+  for (const bouton of document.querySelectorAll(".forme")) {
+    bouton.setAttribute("aria-pressed", String(Number(bouton.dataset.forme) === etat.forme));
+  }
+}
+
+function reinitialiserForme() {
+  etat.forme = null;
+  for (const bouton of document.querySelectorAll(".forme")) bouton.setAttribute("aria-pressed", "false");
+}
+
+function sommeilSaisi() {
+  if (!$("corriger-sommeil").checked) return "";
+  const heures = parseInt($("sommeil-heures").value, 10);
+  const minutes = parseInt($("sommeil-minutes").value || "0", 10);
+  if (isNaN(heures) || heures < 0 || heures > 14 || isNaN(minutes) || minutes < 0 || minutes > 59 || heures * 60 + minutes === 0) {
+    throw new Error("Durée de sommeil invalide : indique des heures entre 0 et 14, et des minutes entre 0 et 59.");
+  }
+  return heures + "h" + String(minutes).padStart(2, "0");
+}
+
+function statutSaisie(type, texte, lien) {
+  const zone = $("saisie-statut");
+  vider(zone);
+  if (texte) {
+    zone.appendChild(bandeau(type, texte, lien));
+    zone.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+}
+
+const pause = (ms) => new Promise((resoudre) => setTimeout(resoudre, ms));
+
+async function derniereExecution() {
+  const reponse = await appelGitHub("/actions/workflows/" + WORKFLOW + "/runs?per_page=1");
+  const json = await reponse.json();
+  return json.workflow_runs && json.workflow_runs[0] ? json.workflow_runs[0].id : 0;
+}
+
+async function lancerMatinee() {
+  if (etat.enCours) return;
+  if (!lireJeton()) { afficherOnglet("reglages"); return; }
+
+  let sommeil;
+  try {
+    sommeil = sommeilSaisi();
+  } catch (e) {
+    statutSaisie("erreur", e.message);
+    return;
+  }
+
+  etat.enCours = true;
+  const bouton = $("bouton-lancer");
+  bouton.disabled = true;
+  bouton.textContent = "Matinée en cours…";
+  statutSaisie("ok", "Envoi de ta saisie à GitHub…");
+
+  try {
+    // 1. On note la dernière exécution connue, pour reconnaître la nouvelle
+    const precedente = await derniereExecution();
+
+    // 2. On déclenche le workflow Matin avec ta saisie
+    await appelGitHub("/actions/workflows/" + WORKFLOW + "/dispatches", {
+      methode: "POST",
+      corps: {
+        ref: "main",
+        inputs: {
+          forme: etat.forme ? String(etat.forme) : "aucune",
+          sommeil: sommeil,
+          note: $("note").value.trim(),
+        },
+      },
+    });
+
+    // 3. On suit son avancement jusqu'à la fin
+    const debut = Date.now();
+    let execution = null;
+    while (Date.now() - debut < ATTENTE_MAX_MS) {
+      await pause(INTERVALLE_MS);
+      const reponse = await appelGitHub("/actions/workflows/" + WORKFLOW + "/runs?per_page=5&event=workflow_dispatch");
+      const json = await reponse.json();
+      execution = (json.workflow_runs || []).find((run) => run.id > precedente) || null;
+      if (!execution) {
+        statutSaisie("ok", "Demande reçue, en attente d'un serveur GitHub…");
+      } else if (execution.status === "completed") {
+        break;
+      } else if (execution.status === "in_progress") {
+        statutSaisie("ok", "Synchro Garmin et calcul du verdict en cours…");
+      } else {
+        statutSaisie("ok", "En file d'attente chez GitHub…");
+      }
+    }
+
+    // 4. On recharge les données, même en cas d'échec : le verdict est calculé quand même
+    if (execution && execution.status === "completed") {
+      await chargerDonnees();
+      if (execution.conclusion === "success") {
+        statutSaisie("", "");
+        $("note").value = "";
+        $("corriger-sommeil").checked = false;
+        $("bloc-duree").hidden = true;
+        reinitialiserForme();
+        afficherOnglet("aujourdhui");
+        toast("Ta matinée est prête.");
+      } else {
+        statutSaisie("erreur", "La routine s'est terminée en erreur. Le verdict s'appuie sur les données déjà enregistrées.", { texte: "Voir le détail sur GitHub", url: execution.html_url });
+      }
+    } else {
+      statutSaisie("alerte", "La routine prend plus de temps que prévu. Reviens dans quelques minutes et actualise l'onglet Aujourd'hui.", execution ? { texte: "Suivre sur GitHub", url: execution.html_url } : null);
+    }
+  } catch (e) {
+    statutSaisie("erreur", e.message);
+  } finally {
+    etat.enCours = false;
+    bouton.disabled = false;
+    bouton.textContent = "Lancer ma matinée";
+  }
+}
+
+// ---------- Réglages ----------
+async function enregistrerJeton() {
+  const jeton = $("champ-jeton").value.trim();
+  const zone = $("reglages-statut");
+  vider(zone);
+  if (!jeton) {
+    zone.appendChild(bandeau("erreur", "Colle d'abord ta clé d'accès dans le champ."));
+    return;
+  }
+  const memorise = ecrireJeton(jeton);
+  zone.appendChild(bandeau("ok", "Test de la clé en cours…"));
+  try {
+    await chargerDonnees();
+    vider(zone);
+    $("champ-jeton").value = "";
+    if (!memorise) {
+      zone.appendChild(bandeau("alerte", "La clé fonctionne, mais ce navigateur ne peut pas l'enregistrer : il faudra la recoller à chaque ouverture."));
+    }
+    afficherOnglet("aujourdhui");
+    toast("Clé enregistrée, données chargées.");
+  } catch (e) {
+    ecrireJeton("");
+    vider(zone);
+    zone.appendChild(bandeau("erreur", e.message));
+  }
+}
+
+function oublierJeton() {
+  ecrireJeton("");
+  etat.donnees = null;
+  const zone = $("reglages-statut");
+  vider(zone);
+  zone.appendChild(bandeau("ok", "Clé effacée de ce téléphone."));
+}
+
+// ---------- Navigation ----------
+function afficherOnglet(nom) {
+  for (const section of document.querySelectorAll(".onglet")) {
+    section.hidden = section.id !== "onglet-" + nom;
+  }
+  for (const bouton of document.querySelectorAll("nav.onglets button")) {
+    if (bouton.dataset.onglet === nom) bouton.setAttribute("aria-current", "page");
+    else bouton.removeAttribute("aria-current");
+  }
+  document.querySelector("main").scrollTop = 0;
+}
+
+// ---------- Démarrage ----------
+for (const bouton of document.querySelectorAll("nav.onglets button")) {
+  bouton.addEventListener("click", () => afficherOnglet(bouton.dataset.onglet));
+}
+for (const bouton of document.querySelectorAll("[data-aller]")) {
+  bouton.addEventListener("click", () => afficherOnglet(bouton.dataset.aller));
+}
+for (const bouton of document.querySelectorAll(".forme")) {
+  bouton.addEventListener("click", () => choisirForme(Number(bouton.dataset.forme)));
+}
+$("corriger-sommeil").addEventListener("change", (e) => { $("bloc-duree").hidden = !e.target.checked; });
+$("bouton-lancer").addEventListener("click", lancerMatinee);
+$("bouton-copier").addEventListener("click", copierRapport);
+$("bouton-actualiser").addEventListener("click", actualiser);
+$("bouton-enregistrer-jeton").addEventListener("click", enregistrerJeton);
+$("bouton-oublier-jeton").addEventListener("click", oublierJeton);
+
+// En revenant sur l'appli, on recharge les données (sauf pendant une matinée en cours)
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && lireJeton() && !etat.enCours) {
+    chargerDonnees().catch(() => {});
+  }
+});
+
+preparerSaisie();
+if (lireJeton()) {
+  afficherOnglet("aujourdhui");
+  chargerDonnees().catch((e) => {
+    const bandeaux = $("aujourdhui-bandeaux");
+    vider(bandeaux);
+    bandeaux.appendChild(bandeau("erreur", e.message));
+  });
+} else {
+  afficherOnglet("reglages");
+  $("reglages-statut").appendChild(bandeau("info", "Première ouverture : colle ta clé d'accès GitHub pour connecter l'appli à tes données."));
+}
+</script>
+</body>
+</html>
